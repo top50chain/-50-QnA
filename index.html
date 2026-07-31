@@ -1477,6 +1477,149 @@
     min-height:36px !important;
   }
 
+
+  /* ---------- compact one-line trash list + batch actions ---------- */
+  .trash-modal{
+    width:min(560px, calc(100vw - 28px));
+  }
+  .trash-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 14px;
+    border-bottom:1px solid #F0F0F1;
+    background:#FCFCFC;
+  }
+  .trash-select-all{
+    flex:none;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    color:#55555A;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .trash-select-all input,
+  .trash-item-check{
+    width:16px;
+    height:16px;
+    margin:0;
+    accent-color:var(--orange);
+    cursor:pointer;
+    flex:none;
+  }
+  .trash-batch-actions{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    min-width:0;
+  }
+  .trash-batch-actions button{
+    border-radius:999px;
+    padding:7px 10px;
+    font-size:11px;
+    font-weight:750;
+    white-space:nowrap;
+    cursor:pointer;
+  }
+  #trashBatchRestore{
+    border:1px solid #F0D6C5;
+    background:#FFF8F3;
+    color:#B45F27;
+  }
+  #trashBatchDelete{
+    border:1px solid #EFCACA;
+    background:#FFF5F5;
+    color:#C83F3F;
+  }
+  .trash-batch-actions button:disabled{
+    opacity:.38;
+    cursor:default;
+  }
+
+  .trash-list{
+    padding:2px 14px 14px;
+  }
+  .trash-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-height:52px;
+    padding:8px 2px;
+  }
+  .trash-item-main{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:1;
+    min-width:0;
+  }
+  .trash-item-title{
+    flex:1 1 auto;
+    min-width:0;
+    font-size:13px;
+    font-weight:650;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .trash-item-meta{
+    flex:none;
+    margin:0;
+    max-width:145px;
+    color:#929297;
+    font-size:10.5px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .trash-item-actions{
+    flex:none;
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    gap:5px;
+    min-width:auto;
+  }
+  .restore-btn,
+  .permanent-delete-btn{
+    width:auto;
+    min-width:52px;
+    padding:6px 9px;
+    font-size:10.5px;
+  }
+
+  @media (max-width:520px){
+    .trash-modal{
+      width:calc(100vw - 20px);
+    }
+    .trash-toolbar{
+      padding:9px 12px;
+    }
+    .trash-batch-actions button{
+      padding:6px 8px;
+      font-size:10.5px;
+    }
+    .trash-item{
+      gap:6px;
+    }
+    .trash-item-main{
+      gap:6px;
+    }
+    .trash-item-meta{
+      max-width:82px;
+    }
+    .restore-btn,
+    .permanent-delete-btn{
+      min-width:auto;
+      padding:6px 7px;
+      font-size:10px;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -1501,7 +1644,7 @@
           <span class="qp-label">많이 찾는 질문</span>
           <div class="qp-viewport" id="qpViewport"></div>
         </div>
-        <button class="trash-open-btn" id="trashOpenBtn" type="button" aria-label="실수로 삭제한 질문 열기">실수로 삭제했어요!<span class="trash-count" id="trashCount">0</span></button>
+        <button class="trash-open-btn" id="trashOpenBtn" type="button" aria-label="삭제한 게시글 열기">삭제한 게시글<span class="trash-count" id="trashCount">0</span></button>
       </div>
       <div class="dropdown" id="dropdown"></div>
     </div>
@@ -1658,8 +1801,18 @@
 <div class="lightbox" id="lightbox"><img id="lightboxImg" src=""></div>
 <div class="overlay" id="trashOverlay">
   <div class="modal trash-modal">
-    <div class="modal-title"><span>실수로 삭제했어요!</span><button id="trashModalClose">✕</button></div>
-    <div class="trash-subtitle">삭제된 질문은 3일 동안 보관된 뒤 자동으로 완전히 삭제돼요.</div>
+    <div class="modal-title"><span>삭제한 게시글</span><button id="trashModalClose">✕</button></div>
+    <div class="trash-subtitle">삭제된 게시글은 3일 동안 보관된 뒤 자동으로 완전히 삭제돼요.</div>
+    <div class="trash-toolbar" id="trashToolbar">
+      <label class="trash-select-all">
+        <input type="checkbox" id="trashSelectAll">
+        <span id="trashSelectAllText">전체선택</span>
+      </label>
+      <div class="trash-batch-actions">
+        <button type="button" id="trashBatchRestore" disabled>선택 복원</button>
+        <button type="button" id="trashBatchDelete" disabled>선택 영구삭제</button>
+      </div>
+    </div>
     <div class="trash-list" id="trashList"></div>
   </div>
 </div>
@@ -1696,6 +1849,7 @@
   let filterCat = "전체";
   let searchQuery = "";
   let currentDetailId = null;
+  const selectedTrashIds = new Set();
 
   const $ = (id) => document.getElementById(id);
   const listEl = $("list");
@@ -2510,40 +2664,195 @@
     if(hours >= 24) return `1일 후 자동 삭제`;
     return `${Math.max(1,hours)}시간 후 자동 삭제`;
   }
+  function updateTrashSelectionUI(){
+    const total = trashEntries.length;
+    const selected = selectedTrashIds.size;
+    const selectAll = $("trashSelectAll");
+    const label = $("trashSelectAllText");
+    const restoreBtn = $("trashBatchRestore");
+    const deleteBtn = $("trashBatchDelete");
+
+    if(selectAll){
+      selectAll.checked = total > 0 && selected === total;
+      selectAll.indeterminate = selected > 0 && selected < total;
+      selectAll.disabled = total === 0;
+    }
+    if(label){
+      label.textContent = selected > 0 ? `전체선택 (${selected})` : "전체선택";
+    }
+    if(restoreBtn) restoreBtn.disabled = selected === 0;
+    if(deleteBtn) deleteBtn.disabled = selected === 0;
+  }
+
   function renderTrashList(){
     purgeExpiredTrash();
     updateTrashCount();
+
+    const validIds = new Set(trashEntries.map(item=>String(item.id)));
+    [...selectedTrashIds].forEach(id=>{
+      if(!validIds.has(String(id))) selectedTrashIds.delete(String(id));
+    });
+
     const el = $("trashList");
     if(!el) return;
+
     if(!trashEntries.length){
-      el.innerHTML = `<div class="trash-empty">삭제된 질문이 없어요.</div>`;
+      el.innerHTML = `<div class="trash-empty">삭제된 게시글이 없어요.</div>`;
+      updateTrashSelectionUI();
       return;
     }
-    el.innerHTML = trashEntries.map(item=>`
+
+    el.innerHTML = trashEntries.map(item=>{
+      const id = String(item.id);
+      return `
       <div class="trash-item">
+        <input class="trash-item-check" type="checkbox"
+          aria-label="${escapeHtml(item.question || "제목 없음")} 선택"
+          data-trash-check-id="${escapeHtml(id)}"
+          ${selectedTrashIds.has(id) ? "checked" : ""}>
         <div class="trash-item-main">
           <div class="trash-item-title">${escapeHtml(item.question || "제목 없음")}</div>
           <div class="trash-item-meta">${escapeHtml(item.category || "기타")} · ${remainingTrashText(item.deletedAt)}</div>
         </div>
         <div class="trash-item-actions">
-          <button class="restore-btn" type="button" data-restore-id="${escapeHtml(item.id)}">복원</button>
-          <button class="permanent-delete-btn" type="button" data-permanent-delete-id="${escapeHtml(item.id)}">영구삭제</button>
+          <button class="restore-btn" type="button" data-restore-id="${escapeHtml(id)}">복원</button>
+          <button class="permanent-delete-btn" type="button" data-permanent-delete-id="${escapeHtml(id)}">영구삭제</button>
         </div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
+
+    el.querySelectorAll("[data-trash-check-id]").forEach(check=>{
+      check.addEventListener("change", ()=>{
+        const id = String(check.getAttribute("data-trash-check-id"));
+        if(check.checked) selectedTrashIds.add(id);
+        else selectedTrashIds.delete(id);
+        updateTrashSelectionUI();
+      });
+    });
+
     el.querySelectorAll("[data-restore-id]").forEach(btn=>{
-      btn.addEventListener("click", ()=> restoreTrashItem(btn.getAttribute("data-restore-id")));
+      btn.addEventListener("click", async ()=>{
+        const id = String(btn.getAttribute("data-restore-id"));
+        selectedTrashIds.delete(id);
+        await restoreTrashItem(id);
+      });
     });
+
     el.querySelectorAll("[data-permanent-delete-id]").forEach(btn=>{
-      btn.addEventListener("click", ()=> permanentlyDeleteTrashItem(btn.getAttribute("data-permanent-delete-id"), btn));
+      btn.addEventListener("click", async ()=>{
+        const id = String(btn.getAttribute("data-permanent-delete-id"));
+        await permanentlyDeleteTrashItem(id, btn);
+        selectedTrashIds.delete(id);
+        updateTrashSelectionUI();
+      });
     });
+
+    updateTrashSelectionUI();
   }
+
+  async function restoreSelectedTrashItems(){
+    const ids = [...selectedTrashIds];
+    if(!ids.length) return;
+
+    const targets = trashEntries.filter(item=>ids.includes(String(item.id)));
+    if(!targets.length) return;
+
+    const button = $("trashBatchRestore");
+    if(button) button.disabled = true;
+
+    try{
+      const restoredItems = targets.map(item=>{
+        const restored = {...item};
+        delete restored.deletedAt;
+        return restored;
+      });
+
+      await Promise.all(restoredItems.map(item=>upsertExistingEntry(item, false)));
+
+      const restoredIds = new Set(restoredItems.map(item=>String(item.id)));
+      trashEntries = trashEntries.filter(item=>!restoredIds.has(String(item.id)));
+      entries.push(...restoredItems);
+      selectedTrashIds.clear();
+
+      updateTrashCount();
+      render();
+      renderTrashList();
+      showToast(`${restoredItems.length}개 게시글을 복원했어요 ✓`);
+    }catch(e){
+      console.error("batch restore failed", e);
+      showToast("선택한 게시글 복원에 실패했어요");
+      updateTrashSelectionUI();
+    }
+  }
+
+  async function permanentlyDeleteSelectedTrashItems(){
+    const ids = [...selectedTrashIds];
+    if(!ids.length) return;
+
+    const targets = trashEntries.filter(item=>ids.includes(String(item.id)));
+    if(!targets.length) return;
+
+    if(!confirm(`선택한 게시글 ${targets.length}개를 영구 삭제할까요?\n\n영구 삭제한 게시글은 다시 복원할 수 없어요.`)) return;
+
+    const numericIds = targets.map(item=>Number(item.id));
+    if(numericIds.some(id=>!Number.isInteger(id))){
+      showToast("잘못된 게시글 ID가 포함되어 있어요");
+      return;
+    }
+
+    const button = $("trashBatchDelete");
+    if(button) button.disabled = true;
+
+    try{
+      const { error } = await supabaseClient
+        .from("qna")
+        .delete()
+        .in("id", numericIds);
+
+      if(error) throw error;
+
+      const deletedIds = new Set(targets.map(item=>String(item.id)));
+      trashEntries = trashEntries.filter(item=>!deletedIds.has(String(item.id)));
+
+      if(lastDeletedId && deletedIds.has(String(lastDeletedId))){
+        lastDeletedId = null;
+        hideUndoToast();
+      }
+
+      selectedTrashIds.clear();
+      updateTrashCount();
+      renderTrashList();
+      showToast(`${targets.length}개 게시글을 영구 삭제했어요`);
+    }catch(e){
+      console.error("batch permanent delete failed", e);
+      showToast("선택한 게시글 삭제에 실패했어요");
+      updateTrashSelectionUI();
+    }
+  }
+
+  $("trashSelectAll").addEventListener("change", ()=>{
+    if($("trashSelectAll").checked){
+      trashEntries.forEach(item=>selectedTrashIds.add(String(item.id)));
+    }else{
+      selectedTrashIds.clear();
+    }
+    renderTrashList();
+  });
+
+  $("trashBatchRestore").addEventListener("click", restoreSelectedTrashItems);
+  $("trashBatchDelete").addEventListener("click", permanentlyDeleteSelectedTrashItems);
+
   function openTrashModal(){
+    selectedTrashIds.clear();
     purgeExpiredTrash();
     saveTrash();
     renderTrashList();
     $("trashOverlay").classList.add("show");
   }
-  function closeTrashModal(){ $("trashOverlay").classList.remove("show"); }
+  function closeTrashModal(){
+    selectedTrashIds.clear();
+    $("trashOverlay").classList.remove("show");
+  }
   $("trashOpenBtn").addEventListener("click", openTrashModal);
   $("trashModalClose").addEventListener("click", closeTrashModal);
   $("trashOverlay").addEventListener("click", e=>{ if(e.target===$("trashOverlay")) closeTrashModal(); });
