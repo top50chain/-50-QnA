@@ -1620,6 +1620,983 @@
     }
   }
 
+
+  /* ---------- rich answer editor ---------- */
+  .rich-editor-wrap{
+    border:1px solid var(--border);
+    border-radius:12px;
+    overflow:hidden;
+    background:#fff;
+    transition:border-color .18s ease, box-shadow .18s ease;
+  }
+  .rich-editor-wrap:focus-within{
+    border-color:var(--orange);
+    box-shadow:0 0 0 3px rgba(255,122,47,.08);
+  }
+  .rich-toolbar{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:5px;
+    min-height:42px;
+    padding:6px 8px;
+    border-bottom:1px solid var(--border-soft);
+    background:#FAFAFB;
+    position:sticky;
+    top:0;
+    z-index:3;
+  }
+  .rich-tool-btn,
+  .rich-color-tool{
+    height:30px;
+    min-width:32px;
+    border:1px solid #E5E5E8;
+    border-radius:8px;
+    background:#fff;
+    color:#424247;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 8px;
+    font-size:12px;
+    font-weight:750;
+    cursor:pointer;
+    user-select:none;
+  }
+  .rich-tool-btn:hover,
+  .rich-color-tool:hover{ border-color:#D8B59E; background:#FFF9F5; }
+  .rich-tool-btn:active{ transform:scale(.97); }
+  .rich-underline{ text-decoration:underline; text-underline-offset:2px; }
+  .rich-table-btn{ min-width:48px; }
+  .rich-color-tool{
+    gap:5px;
+    padding:0 6px 0 8px;
+  }
+  .rich-color-tool input[type=color]{
+    width:18px;
+    height:18px;
+    border:0;
+    padding:0;
+    background:transparent;
+    cursor:pointer;
+  }
+  .rich-color-tool input[type=color]::-webkit-color-swatch-wrapper{ padding:0; }
+  .rich-color-tool input[type=color]::-webkit-color-swatch{
+    border:1px solid #DADADD;
+    border-radius:5px;
+  }
+  .rich-bg-tool span{ font-size:10px; }
+  .rich-editor{
+    min-height:170px;
+    max-height:48vh;
+    overflow:auto;
+    padding:13px;
+    outline:none;
+    font-size:14px;
+    line-height:1.65;
+    color:var(--ink);
+    word-break:break-word;
+  }
+  .rich-editor:empty::before{
+    content:attr(data-placeholder);
+    color:#AAAAB0;
+    pointer-events:none;
+  }
+  .rich-editor p{ margin:.3em 0; }
+  .rich-editor table,
+  .detail-a table{
+    width:100%;
+    border-collapse:collapse;
+    table-layout:auto;
+    margin:12px 0;
+    background:#fff;
+  }
+  .rich-editor th,
+  .rich-editor td,
+  .detail-a th,
+  .detail-a td{
+    min-width:70px;
+    border:1px solid #DCDCE0;
+    padding:8px 9px;
+    text-align:left;
+    vertical-align:top;
+    line-height:1.5;
+    word-break:break-word;
+  }
+  .rich-editor th,
+  .detail-a th{
+    background:#F7F7F8;
+    font-weight:750;
+  }
+  .rich-editor td:focus,
+  .rich-editor th:focus{
+    outline:2px solid rgba(255,122,47,.25);
+    outline-offset:-2px;
+  }
+  .rich-editor-hint{ margin-top:6px; }
+
+  /* 상세 답변의 HTML 서식과 표 */
+  .detail-a{
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+  .detail-a p{ margin:.45em 0; }
+  .detail-a ul,.detail-a ol{ padding-left:1.4em; }
+  .detail-a table{ display:table; }
+  .detail-a .table-scroll{
+    width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  /* ---------- desktop centered detail popup ---------- */
+  @media (min-width:680px){
+    body.detail-open .app{ max-width:600px !important; }
+    body.detail-open .cat-desc-banner,
+    body.detail-open .result-info,
+    body.detail-open .list{
+      width:auto !important;
+    }
+    body.detail-open .fab{
+      width:auto !important;
+      left:0;
+      right:0;
+    }
+
+    .detail-backdrop{
+      z-index:59;
+      background:rgba(25,22,20,.42);
+      backdrop-filter:blur(1.5px);
+    }
+    .detail{
+      z-index:60;
+      left:50% !important;
+      right:auto !important;
+      top:50% !important;
+      bottom:auto !important;
+      width:min(720px, calc(100vw - 56px)) !important;
+      height:min(780px, calc(100vh - 56px));
+      max-width:none !important;
+      margin:0 !important;
+      border:1px solid rgba(0,0,0,.06);
+      border-radius:22px;
+      box-shadow:0 24px 70px rgba(20,18,16,.22);
+      transform:translate(-50%,-46%) scale(.985) !important;
+      opacity:0;
+      visibility:hidden;
+      pointer-events:none;
+      overflow:hidden;
+      transition:transform .22s ease, opacity .2s ease, visibility .2s;
+    }
+    .detail.show{
+      transform:translate(-50%,-50%) scale(1) !important;
+      opacity:1;
+      visibility:visible;
+      pointer-events:auto;
+    }
+    .detail-top{
+      padding:14px 18px;
+      border-radius:22px 22px 0 0;
+    }
+    .detail-scroll{ padding:28px 34px 36px; }
+    .detail-bottom{
+      padding-left:34px;
+      padding-right:34px;
+      border-radius:0 0 22px 22px;
+    }
+  }
+
+  /* 모바일 상세 패널은 키워드 영역이 가려질 정도로 높게 */
+  @media (max-width:679px){
+    .detail{
+      height:min(89vh, 820px);
+    }
+    .detail-backdrop{
+      background:rgba(20,18,16,.34);
+      touch-action:none;
+    }
+  }
+
+  /* ---------- one-direction popular ticker ---------- */
+  .qp-item{
+    transition:transform .38s cubic-bezier(.22,.75,.25,1), opacity .32s ease;
+  }
+  .qp-item.qp-exit{
+    transform:translateY(-115%);
+    opacity:0;
+  }
+  .qp-item.qp-enter{
+    transform:translateY(115%);
+    opacity:0;
+  }
+
+
+  /* ---------- color tool / notice checkbox polish ---------- */
+  .rich-color-tool{
+    position:relative;
+    overflow:hidden;
+    gap:6px;
+    min-width:48px;
+  }
+  .rich-color-label{
+    line-height:1;
+    pointer-events:none;
+  }
+  .rich-color-swatch{
+    width:20px;
+    height:20px;
+    flex:none;
+    display:block;
+    border-radius:6px;
+    border:1px solid rgba(0,0,0,.12);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.28);
+    pointer-events:none;
+  }
+  .rich-color-tool input[type=color]{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    opacity:0;
+    cursor:pointer;
+  }
+  .rich-bg-tool{ min-width:57px; }
+
+  .notice-check{
+    justify-content:flex-start;
+    gap:7px;
+    min-height:40px;
+  }
+  .notice-check input{
+    order:initial;
+    width:18px;
+    height:18px;
+    margin:0;
+    flex:none;
+  }
+  .notice-check-title{
+    order:initial;
+    flex:none;
+  }
+  .notice-check-desc{
+    order:initial;
+    flex:0 1 auto;
+    min-width:0;
+    margin-left:1px;
+  }
+  .notice-check-text{ display:contents; }
+
+  #authorInput:placeholder-shown::placeholder{ color:transparent; }
+
+
+  /* ---------- final editor toolbar alignment ---------- */
+  .rich-toolbar{
+    display:flex;
+    align-items:center;
+    flex-wrap:nowrap;
+    gap:7px;
+    min-height:50px;
+    padding:7px 9px;
+  }
+  .rich-toolbar .rich-tool-btn{
+    position:relative;
+    flex:0 0 36px;
+    width:36px;
+    min-width:36px;
+    height:36px;
+    padding:0;
+    margin:0;
+    border:1px solid #E2E2E5;
+    border-radius:9px;
+    background:#fff;
+    color:#38383D;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    cursor:pointer;
+  }
+  .rich-toolbar .rich-tool-btn:hover{
+    border-color:#D4B29A;
+    background:#FFF9F5;
+  }
+  .toolbar-letter{
+    font-size:15px;
+    line-height:1;
+    font-weight:800;
+  }
+  .toolbar-u{
+    text-decoration:underline;
+    text-decoration-thickness:1.5px;
+    text-underline-offset:3px;
+  }
+  .toolbar-svg{
+    width:19px;
+    height:19px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.45;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    pointer-events:none;
+  }
+  .rich-color-button input[type=color]{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    opacity:0;
+    border:0;
+    padding:0;
+    cursor:pointer;
+  }
+  .text-color-icon{
+    font-size:15px;
+    line-height:1;
+    font-weight:800;
+    transform:translateY(-2px);
+    pointer-events:none;
+  }
+  .text-color-line{
+    position:absolute;
+    left:9px;
+    right:9px;
+    bottom:6px;
+    height:3px;
+    border-radius:2px;
+    pointer-events:none;
+  }
+  .cell-color-icon .cell-fill-preview{
+    stroke:none;
+  }
+
+  /* 공지 체크박스와 텍스트를 같은 기준선으로 정렬 */
+  .notice-field{
+    margin-top:0;
+  }
+  .notice-check{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:7px;
+    min-height:42px;
+    padding:7px 2px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .notice-check input{
+    flex:0 0 18px;
+    width:18px;
+    height:18px;
+    margin:0;
+    transform:none;
+  }
+  .notice-check-title{
+    flex:none;
+    font-size:12.5px;
+    line-height:18px;
+  }
+  .notice-check-desc{
+    flex:0 1 auto;
+    min-width:0;
+    margin:0;
+    line-height:18px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+
+  /* ---------- final rich editor popovers ---------- */
+  .rich-tool-menu-wrap{
+    position:relative;
+    display:inline-flex;
+  }
+  .text-color-chip{
+    position:absolute;
+    left:8px;
+    right:8px;
+    bottom:5px;
+    height:4px;
+    border-radius:999px;
+    box-shadow:0 0 0 1px rgba(0,0,0,.08);
+    pointer-events:none;
+  }
+  .text-color-icon{
+    transform:translateY(-2px);
+  }
+  .rich-popover{
+    position:absolute;
+    top:43px;
+    left:0;
+    z-index:30;
+    display:none;
+    min-width:184px;
+    padding:10px;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:12px;
+    box-shadow:0 12px 30px rgba(30,30,34,.14);
+  }
+  .rich-popover.show{ display:block; }
+  .rich-popover-title{
+    margin-bottom:8px;
+    font-size:11px;
+    font-weight:750;
+    color:var(--ink-2);
+  }
+  .color-palette{
+    display:grid;
+    grid-template-columns:repeat(6, 24px);
+    gap:6px;
+  }
+  .color-swatch-btn{
+    width:24px;
+    height:24px;
+    border-radius:6px;
+    border:1px solid rgba(0,0,0,.13);
+    padding:0;
+    cursor:pointer;
+  }
+  .color-swatch-btn:hover{ transform:scale(1.08); }
+  .table-popover{
+    min-width:210px;
+    padding:7px;
+  }
+  .table-menu-item{
+    width:100%;
+    min-height:38px;
+    border:0;
+    border-radius:8px;
+    background:transparent;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding:7px 8px;
+    font-size:12px;
+    font-weight:650;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .table-menu-item:hover{ background:var(--gray-bg); }
+  .table-menu-icon{
+    width:20px;
+    height:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#4A4A4F;
+  }
+  .table-menu-icon svg{
+    width:18px;
+    height:18px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.45;
+  }
+  .table-fill-icon svg rect:last-child{
+    fill:#FFD6BD;
+    stroke:none;
+  }
+  .table-grid-panel,
+  .cell-color-panel{
+    display:none;
+    padding:8px 5px 5px;
+    border-top:1px solid var(--border-soft);
+    margin-top:4px;
+  }
+  .table-grid-panel.show,
+  .cell-color-panel.show{ display:block; }
+  .table-grid-title{
+    margin-bottom:8px;
+    text-align:center;
+    font-size:11px;
+    font-weight:700;
+    color:var(--ink-2);
+  }
+  .table-grid-picker{
+    display:grid;
+    grid-template-columns:repeat(6, 24px);
+    gap:4px;
+    justify-content:center;
+  }
+  .table-grid-cell{
+    width:24px;
+    height:24px;
+    border:1px solid #DADADF;
+    border-radius:3px;
+    background:#fff;
+    cursor:pointer;
+  }
+  .table-grid-cell.active{
+    background:#FFE7D8;
+    border-color:#FF9C62;
+  }
+
+  /* 공지 체크박스와 텍스트 수직 중앙 정렬 */
+  .notice-check{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:7px;
+    min-height:42px;
+    padding:8px 2px;
+  }
+  .notice-check-main{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    flex:none;
+    line-height:1;
+  }
+  .notice-check-main input{
+    appearance:auto;
+    -webkit-appearance:auto;
+    width:18px;
+    height:18px;
+    margin:0;
+    padding:0;
+    position:static;
+    transform:none;
+    vertical-align:middle;
+    flex:none;
+  }
+  .notice-check-title{
+    display:inline-flex;
+    align-items:center;
+    height:18px;
+    line-height:18px;
+    margin:0;
+    padding:0;
+  }
+  .notice-check-desc{
+    display:inline-flex;
+    align-items:center;
+    height:18px;
+    line-height:18px;
+    margin:0;
+    padding:0;
+  }
+
+  @media (max-width:420px){
+    .rich-popover{
+      position:fixed;
+      left:16px;
+      right:16px;
+      top:auto;
+      bottom:18px;
+      min-width:0;
+      z-index:190;
+    }
+  }
+
+
+  /* ---------- notice alignment / unclipped table tools ---------- */
+  .rich-editor-wrap{
+    position:relative;
+    overflow:visible;
+  }
+  .rich-editor{
+    border-radius:0 0 12px 12px;
+  }
+  .table-popover{
+    left:auto;
+    right:0;
+    width:268px;
+    max-width:calc(100vw - 36px);
+    max-height:min(420px, 70vh);
+    overflow-y:auto;
+  }
+  .cell-color-panel .color-palette{
+    grid-template-columns:repeat(6, 28px);
+    gap:7px;
+    justify-content:center;
+  }
+  .cell-color-panel .color-swatch-btn{
+    width:28px;
+    height:28px;
+  }
+  .cell-opacity-row{
+    display:grid;
+    grid-template-columns:auto 1fr 38px;
+    align-items:center;
+    gap:8px;
+    margin-top:12px;
+    padding-top:10px;
+    border-top:1px solid var(--border-soft);
+    font-size:11px;
+    color:var(--ink-2);
+  }
+  .cell-opacity-row input[type=range]{
+    width:100%;
+    accent-color:var(--orange);
+  }
+  .cell-opacity-row strong{
+    text-align:right;
+    color:var(--ink);
+    font-size:11px;
+  }
+  .cell-transparent-btn{
+    width:100%;
+    margin-top:8px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:#fff;
+    color:var(--ink-2);
+    min-height:34px;
+    font-size:11.5px;
+    font-weight:650;
+    cursor:pointer;
+  }
+  .cell-transparent-btn:hover{ background:var(--gray-bg); }
+
+  /* 표 너비 조절 */
+  .rich-editor table{
+    position:relative;
+    width:100%;
+    max-width:100%;
+  }
+  .rich-editor table.is-resizing-table{
+    outline:2px solid rgba(255,122,47,.28);
+    outline-offset:2px;
+  }
+  .table-resize-handle{
+    position:absolute;
+    z-index:12;
+    display:none;
+    width:18px;
+    height:18px;
+    border-radius:5px;
+    background:#fff;
+    border:2px solid var(--orange);
+    box-shadow:0 2px 8px rgba(40,35,30,.14);
+    cursor:ew-resize;
+    touch-action:none;
+  }
+  .table-resize-handle.show{ display:block; }
+  .table-resize-handle::before{
+    content:"";
+    position:absolute;
+    left:4px;
+    right:4px;
+    top:7px;
+    height:2px;
+    border-radius:2px;
+    background:var(--orange);
+  }
+
+  /* 공지 문구를 같은 기준선으로 정렬 */
+  .notice-check{
+    align-items:center;
+  }
+  .notice-check-main{
+    height:20px;
+    align-items:center;
+  }
+  .notice-check-main input{
+    align-self:center;
+  }
+  .notice-check-title,
+  .notice-check-desc{
+    height:auto;
+    min-height:18px;
+    line-height:18px;
+    padding:0;
+    margin:0;
+    align-items:center;
+  }
+  .notice-check-desc{
+    transform:translateY(0);
+    position:relative;
+    top:0;
+  }
+
+  @media (max-width:420px){
+    .table-popover{
+      width:auto;
+      max-height:62vh;
+      overflow-y:auto;
+    }
+    .cell-color-panel .color-palette{
+      grid-template-columns:repeat(6, 30px);
+    }
+    .cell-color-panel .color-swatch-btn{
+      width:30px;
+      height:30px;
+    }
+  }
+
+
+  /* ---------- final exact notice alignment ---------- */
+  .notice-check{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:7px !important;
+    min-height:40px;
+    padding:8px 2px !important;
+    line-height:20px !important;
+  }
+  .notice-check-main{
+    display:inline-flex !important;
+    align-items:center !important;
+    gap:7px !important;
+    height:20px !important;
+    line-height:20px !important;
+  }
+  .notice-check-main input{
+    -webkit-appearance:none !important;
+    appearance:none !important;
+    width:20px !important;
+    height:20px !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:1.5px solid #77777C !important;
+    border-radius:3px !important;
+    background:#fff !important;
+    display:inline-grid !important;
+    place-content:center !important;
+    flex:0 0 20px !important;
+    position:static !important;
+    transform:none !important;
+  }
+  .notice-check-main input::before{
+    content:"";
+    width:10px;
+    height:6px;
+    border-left:2px solid #fff;
+    border-bottom:2px solid #fff;
+    transform:rotate(-45deg) scale(0);
+    transform-origin:center;
+  }
+  .notice-check-main input:checked{
+    background:var(--orange) !important;
+    border-color:var(--orange) !important;
+  }
+  .notice-check-main input:checked::before{ transform:rotate(-45deg) scale(1); }
+  .notice-check-title,
+  .notice-check-desc{
+    display:inline-block !important;
+    height:20px !important;
+    min-height:20px !important;
+    line-height:20px !important;
+    margin:0 !important;
+    padding:0 !important;
+    position:static !important;
+    top:auto !important;
+    transform:none !important;
+    vertical-align:middle !important;
+  }
+
+  /* Popover를 입력창 밖에서도 잘리지 않게 화면 위에 표시 */
+  .rich-popover{
+    position:fixed !important;
+    z-index:1000 !important;
+    top:auto;
+    left:auto;
+    right:auto;
+    bottom:auto;
+    max-width:calc(100vw - 24px);
+    max-height:min(480px, calc(100vh - 24px));
+    overflow:auto;
+  }
+  .table-popover{
+    width:280px;
+    min-width:280px;
+  }
+  .table-selection-hint{
+    margin:4px 7px 2px;
+    padding:7px 8px;
+    border-radius:7px;
+    background:#F8F8F9;
+    color:#8A8A90;
+    font-size:10.5px;
+    line-height:1.4;
+  }
+  .table-bold-icon{
+    font-size:15px;
+    font-weight:850;
+  }
+
+  /* 셀 선택 상태가 확실히 보이도록 */
+  .rich-editor td.cell-selected,
+  .rich-editor th.cell-selected{
+    position:relative;
+    outline:2px solid var(--orange) !important;
+    outline-offset:-2px;
+    box-shadow:inset 0 0 0 999px rgba(255,122,47,.10);
+  }
+  .rich-editor td.cell-selected::after,
+  .rich-editor th.cell-selected::after{
+    content:"";
+    position:absolute;
+    inset:2px;
+    border:1px dashed rgba(255,122,47,.55);
+    pointer-events:none;
+  }
+  .rich-editor table{
+    resize:none;
+  }
+  .table-resize-handle{
+    cursor:nwse-resize !important;
+  }
+  .table-resize-handle::before{
+    width:7px;
+    height:7px;
+    left:auto;
+    right:3px;
+    top:auto;
+    bottom:3px;
+    background:transparent;
+    border-right:2px solid var(--orange);
+    border-bottom:2px solid var(--orange);
+  }
+
+  @media (max-width:679px){
+    .rich-popover{
+      position:fixed !important;
+      left:12px !important;
+      right:12px !important;
+      top:auto !important;
+      bottom:12px !important;
+      width:auto !important;
+      min-width:0 !important;
+      max-height:62vh !important;
+      border-radius:16px;
+    }
+    .table-popover{ width:auto !important; }
+  }
+
+
+  /* ---------- individual cell resize / row add ---------- */
+  .table-row-add-icon{
+    font-size:18px;
+    font-weight:700;
+    line-height:1;
+  }
+  .cell-resize-handle{
+    position:absolute;
+    z-index:14;
+    display:none;
+    width:16px;
+    height:16px;
+    border-radius:4px;
+    background:#fff;
+    border:2px solid #2F80ED;
+    box-shadow:0 2px 8px rgba(40,35,30,.16);
+    cursor:nwse-resize;
+    touch-action:none;
+  }
+  .cell-resize-handle.show{ display:block; }
+  .cell-resize-handle::before{
+    content:"";
+    position:absolute;
+    right:2px;
+    bottom:2px;
+    width:6px;
+    height:6px;
+    border-right:2px solid #2F80ED;
+    border-bottom:2px solid #2F80ED;
+  }
+  .rich-editor table{
+    table-layout:fixed;
+  }
+  .rich-editor td,
+  .rich-editor th{
+    position:relative;
+    min-width:48px;
+    min-height:34px;
+  }
+
+
+  /* ---------- final toolbar corners / table menu icons ---------- */
+  .rich-editor-wrap{
+    border-radius:12px !important;
+    background:#fff !important;
+  }
+  .rich-toolbar{
+    border-radius:11px 11px 0 0 !important;
+    width:100%;
+    margin:0;
+    background:#FAFAFB !important;
+  }
+  .rich-editor{
+    border-radius:0 0 11px 11px !important;
+    background:#fff;
+  }
+  .table-fill-icon svg .top-cell-fill{
+    fill:#6A6A70;
+    stroke:none;
+  }
+  .table-row-add-icon,
+  .table-col-add-icon{
+    font-size:18px;
+    font-weight:750;
+    line-height:1;
+  }
+
+
+  /* ---------- mobile rich popover beside toolbar button ---------- */
+  @media (max-width:679px){
+    .rich-popover{
+      position:fixed !important;
+      left:auto !important;
+      right:auto !important;
+      top:auto !important;
+      bottom:auto !important;
+      width:auto !important;
+      min-width:184px !important;
+      max-width:calc(100vw - 20px) !important;
+      max-height:min(420px, calc(100vh - 20px)) !important;
+      overflow:auto !important;
+      border-radius:12px !important;
+      z-index:1000 !important;
+    }
+    .table-popover{
+      width:280px !important;
+      min-width:280px !important;
+      max-width:calc(100vw - 20px) !important;
+    }
+    .color-popover{
+      width:184px !important;
+      min-width:184px !important;
+    }
+  }
+
+
+  /* ---------- mobile popover polish: hidden scrollbars + safer table placement ---------- */
+  @media (max-width:679px){
+    .rich-popover{
+      scrollbar-width:none !important;
+      -ms-overflow-style:none !important;
+      overscroll-behavior:contain;
+    }
+    .rich-popover::-webkit-scrollbar{
+      width:0 !important;
+      height:0 !important;
+      display:none !important;
+    }
+
+    .color-popover{
+      width:198px !important;
+      min-width:198px !important;
+      padding:13px !important;
+      overflow:visible !important;
+    }
+    .color-popover .color-palette{
+      justify-content:center;
+    }
+
+    .table-popover{
+      width:min(300px, calc(100vw - 16px)) !important;
+      min-width:0 !important;
+      max-width:calc(100vw - 16px) !important;
+      max-height:calc(100dvh - 24px) !important;
+      padding:8px !important;
+      overflow-y:auto !important;
+      overflow-x:hidden !important;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -1745,7 +2722,93 @@
 
     <div class="field">
       <label>답변</label>
-      <textarea id="aInput" placeholder="답변 내용을 입력하세요"></textarea>
+      <div class="rich-editor-wrap">
+        <div class="rich-toolbar" id="richToolbar" role="toolbar" aria-label="답변 서식 도구">
+          <button type="button" class="rich-tool-btn" data-rich-command="bold" title="굵게" aria-label="굵게">
+            <b class="toolbar-letter">B</b>
+          </button>
+
+          <button type="button" class="rich-tool-btn" data-rich-command="underline" title="밑줄" aria-label="밑줄">
+            <span class="toolbar-letter toolbar-u">U</span>
+          </button>
+
+          <div class="rich-tool-menu-wrap">
+            <button type="button" class="rich-tool-btn" id="textColorBtn" title="글자색" aria-label="글자색">
+              <span class="text-color-icon">A</span>
+              <span class="text-color-chip" id="richTextColorSwatch" style="background:#FF7A2F"></span>
+            </button>
+            <div class="rich-popover color-popover" id="textColorPopover">
+              <div class="rich-popover-title">글자색</div>
+              <div class="color-palette" id="textColorPalette"></div>
+            </div>
+          </div>
+
+          <div class="rich-tool-menu-wrap">
+            <button type="button" class="rich-tool-btn" id="tableMenuBtn" title="표" aria-label="표 메뉴">
+              <svg class="toolbar-svg" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3.5" y="4" width="17" height="16" rx="1"></rect>
+                <path d="M3.5 9.3h17M3.5 14.7h17M9.2 4v16M14.8 4v16"></path>
+              </svg>
+            </button>
+            <div class="rich-popover table-popover" id="tablePopover">
+              <button type="button" class="table-menu-item" id="openTableGridBtn">
+                <span class="table-menu-icon">
+                  <svg viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="1"></rect><path d="M3.5 9.3h17M3.5 14.7h17M9.2 4v16M14.8 4v16"></path></svg>
+                </span>
+                <span>표 삽입</span>
+              </button>
+              <button type="button" class="table-menu-item" id="openCellColorBtn">
+                <span class="table-menu-icon table-fill-icon">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="3.5" y="4" width="17" height="16" rx="1"></rect>
+                    <path d="M3.5 9.3h17M3.5 14.7h17M9.2 4v16M14.8 4v16"></path>
+                    <rect class="top-cell-fill" x="3.8" y="4.3" width="5.1" height="4.7"></rect>
+                    <rect class="top-cell-fill" x="9.45" y="4.3" width="5.05" height="4.7"></rect>
+                    <rect class="top-cell-fill" x="15.05" y="4.3" width="5.1" height="4.7"></rect>
+                  </svg>
+                </span>
+                <span>셀 배경색</span>
+              </button>
+              <button type="button" class="table-menu-item" id="toggleCellBoldBtn">
+                <span class="table-menu-icon table-bold-icon">B</span>
+                <span>선택한 셀 테두리 굵게</span>
+              </button>
+              <button type="button" class="table-menu-item" id="addTableRowBtn">
+                <span class="table-menu-icon table-row-add-icon">＋</span>
+                <span>아래에 행 추가</span>
+              </button>
+              <button type="button" class="table-menu-item" id="addTableColumnBtn">
+                <span class="table-menu-icon table-col-add-icon">＋</span>
+                <span>오른쪽에 열 추가</span>
+              </button>
+              <div class="table-selection-hint">표 셀을 누르거나 드래그해 여러 칸을 선택할 수 있어요.</div>
+              <div class="table-grid-panel" id="tableGridPanel">
+                <div class="table-grid-title" id="tableGridTitle">표 크기 선택</div>
+                <div class="table-grid-picker" id="tableGridPicker"></div>
+              </div>
+              <div class="cell-color-panel" id="cellColorPanel">
+                <div class="rich-popover-title">셀 배경색</div>
+                <div class="color-palette" id="cellColorPalette"></div>
+                <div class="cell-opacity-row">
+                  <span>투명도</span>
+                  <input type="range" id="cellOpacityRange" min="0" max="100" value="100">
+                  <strong id="cellOpacityValue">100%</strong>
+                </div>
+                <button type="button" class="cell-transparent-btn" id="clearCellColorBtn">배경색 없음</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="aInput"
+             class="rich-editor"
+             contenteditable="true"
+             role="textbox"
+             aria-multiline="true"
+             data-placeholder="답변 내용을 입력하세요"></div>
+        <div class="table-resize-handle" id="tableResizeHandle" title="드래그해서 표 가로·세로 크기 조절" aria-hidden="true"></div>
+        <div class="cell-resize-handle" id="cellResizeHandle" title="드래그해서 선택한 셀 크기 조절" aria-hidden="true"></div>
+      </div>
+      <div class="hint rich-editor-hint">글자를 드래그해 굵기·밑줄·색상을 적용할 수 있어요. 표는 직접 만들거나 다른 문서에서 복사해 붙여넣을 수 있어요.</div>
     </div>
 
     <div class="field">
@@ -1759,11 +2822,11 @@
 
     <div class="field notice-field">
       <label class="notice-check" for="noticeInput">
-        <span class="notice-check-text">
+        <span class="notice-check-main">
+          <input type="checkbox" id="noticeInput">
           <span class="notice-check-title">공지로 등록</span>
-          <span class="notice-check-desc">모든 카테고리 상단에 표시</span>
         </span>
-        <input type="checkbox" id="noticeInput">
+        <span class="notice-check-desc">모든 카테고리 상단에 표시</span>
       </label>
     </div>
 
@@ -1777,7 +2840,7 @@
 
     <div class="field">
       <label>작성자 (선택)</label>
-      <input type="text" id="authorInput" placeholder="이름 또는 매장명">
+      <input type="text" id="authorInput">
     </div>
 
     <button class="submit-btn" id="submitBtn">등록하기</button>
@@ -1865,6 +2928,113 @@
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function looksLikeHtml(value){
+    return /<\/?(?:p|div|br|strong|b|u|span|table|thead|tbody|tr|th|td|ul|ol|li)\b/i.test(String(value || ""));
+  }
+
+  function plainTextToHtml(value){
+    return escapeHtml(String(value || "")).replace(/\r?\n/g, "<br>");
+  }
+
+  function sanitizeRichHtml(value){
+    const source = String(value || "");
+    if(!source) return "";
+
+    const template = document.createElement("template");
+    template.innerHTML = source;
+
+    const allowedTags = new Set([
+      "P","DIV","BR","STRONG","B","U","SPAN",
+      "TABLE","THEAD","TBODY","TFOOT","TR","TH","TD",
+      "UL","OL","LI"
+    ]);
+    const allowedStyles = new Set([
+      "color","background-color","font-weight","text-decoration",
+      "text-align","vertical-align","width","min-width","max-width","height","min-height","table-layout"
+    ]);
+
+    const cleanNode = (node)=>{
+      [...node.childNodes].forEach(child=>{
+        if(child.nodeType === Node.COMMENT_NODE){
+          child.remove();
+          return;
+        }
+        if(child.nodeType !== Node.ELEMENT_NODE) return;
+
+        if(!allowedTags.has(child.tagName)){
+          child.replaceWith(...child.childNodes);
+          return;
+        }
+
+        [...child.attributes].forEach(attr=>{
+          const name = attr.name.toLowerCase();
+          if(name === "style"){
+            const safe = [];
+            String(attr.value).split(";").forEach(rule=>{
+              const idx = rule.indexOf(":");
+              if(idx < 0) return;
+              const prop = rule.slice(0, idx).trim().toLowerCase();
+              const val = rule.slice(idx + 1).trim();
+              if(!allowedStyles.has(prop)) return;
+              if(/url\s*\(|expression\s*\(|javascript:/i.test(val)) return;
+              safe.push(`${prop}:${val}`);
+            });
+            if(safe.length) child.setAttribute("style", safe.join(";"));
+            else child.removeAttribute("style");
+          }else if(["colspan","rowspan"].includes(name)){
+            const n = Math.max(1, Math.min(30, parseInt(attr.value,10) || 1));
+            child.setAttribute(name, String(n));
+          }else{
+            child.removeAttribute(attr.name);
+          }
+        });
+
+        cleanNode(child);
+      });
+    };
+
+    cleanNode(template.content);
+
+    template.content.querySelectorAll("table").forEach(table=>{
+      if(!table.querySelector("tbody") && table.querySelector("tr")){
+        const tbody = document.createElement("tbody");
+        [...table.children].forEach(child=>{
+          if(child.tagName === "TR") tbody.appendChild(child);
+        });
+        if(tbody.children.length) table.appendChild(tbody);
+      }
+    });
+
+    return template.innerHTML;
+  }
+
+  function normalizeAnswerHtml(value){
+    return sanitizeRichHtml(looksLikeHtml(value) ? value : plainTextToHtml(value));
+  }
+
+  function renderAnswerHtml(value){
+    const html = normalizeAnswerHtml(value);
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    template.content.querySelectorAll("table").forEach(table=>{
+      const wrap = document.createElement("div");
+      wrap.className = "table-scroll";
+      table.parentNode.insertBefore(wrap, table);
+      wrap.appendChild(table);
+    });
+    return template.innerHTML;
+  }
+
+  function answerHtmlToText(value){
+    const div = document.createElement("div");
+    div.innerHTML = normalizeAnswerHtml(value);
+    div.querySelectorAll("br").forEach(br=>br.replaceWith("\n"));
+    div.querySelectorAll("p,div,li,tr").forEach(el=>{
+      if(el.nextSibling) el.appendChild(document.createTextNode("\n"));
+    });
+    return (div.textContent || "").replace(/\n{3,}/g,"\n\n").trim();
   }
   function isToday(ts){
     const d = new Date(ts), n = new Date();
@@ -2470,7 +3640,7 @@
       </div>
       <div class="detail-q">${escapeHtml(e.question)}</div>
       <div class="detail-meta">${fmtDate(e.createdAt)}${e.author? ' · '+escapeHtml(e.author):''}</div>
-      <div class="detail-a">${escapeHtml(e.answer)}</div>
+      <div class="detail-a">${renderAnswerHtml(e.answer)}</div>
       ${images.length? `<div class="sec-label">이미지</div><div class="img-grid">${images.map(f=>`<img src="${f.dataUrl}" data-src="${f.dataUrl}">`).join("")}</div>` : ""}
       ${otherFiles.length? `<div class="sec-label">첨부파일</div><div class="file-list">${otherFiles.map(f=>`<div class="file-item"><span class="fic">📎</span><span>${escapeHtml(f.name)}</span><a href="${f.dataUrl}" download="${escapeHtml(f.name)}">다운로드</a></div>`).join("")}</div>` : ""}
     `;
@@ -2480,6 +3650,7 @@
     $("detailStatusBtn").textContent = e.status==='ended' ? '게시글 다시 열기' : '게시글 종료';
     $("copyHintText").textContent = `복사 ${e.copyCount||0}회`;
     document.body.classList.add("detail-open");
+    document.body.style.overflow = "hidden";
     updateDetailTop();
     $("detailPage").classList.toggle("notice-detail", Boolean(e.isNotice));
     $("detailPage").classList.add("show");
@@ -2492,6 +3663,7 @@
     $("detailPage").classList.remove("show", "notice-detail");
     $("detailBackdrop").classList.remove("show");
     document.body.classList.remove("detail-open");
+    document.body.style.overflow = "";
     closeDetailMenu();
     currentDetailId = null;
     renderCatPills();
@@ -2499,10 +3671,7 @@
     renderQuickPopular();
   }
   function updateDetailTop(){
-    if(window.innerWidth < 680) return;
-    const header = document.querySelector(".header");
-    const top = header ? Math.ceil(header.getBoundingClientRect().bottom) : 0;
-    document.documentElement.style.setProperty("--detail-top", `${top}px`);
+    // PC 상세창은 화면 중앙 팝업으로 고정됩니다.
   }
   window.addEventListener("resize", ()=>{
     if($("detailPage").classList.contains("show")) updateDetailTop();
@@ -2530,16 +3699,6 @@
   $("backBtn").addEventListener("click", closeDetail);
   $("detailBackdrop").addEventListener("click", closeDetail);
 
-  // PC·모바일 공통: 열린 게시글과 다른 게시글 행을 제외한 바깥 영역을 누르면 상세창 닫기
-  document.addEventListener("pointerdown", (event)=>{
-    if(!$("detailPage").classList.contains("show")) return;
-    const target = event.target;
-    if($("detailPage").contains(target)) return;
-    if(target.closest && target.closest(".row")) return;
-    if(target.closest && target.closest(".overlay, .lightbox")) return;
-    closeDetail();
-  });
-
   document.addEventListener("keydown", (e)=>{
     if(e.key === "Escape" && $("detailPage").classList.contains("show")) closeDetail();
   });
@@ -2547,7 +3706,7 @@
   $("detailCopyBtn").addEventListener("click", async ()=>{
     const e = entries.find(x=>x.id===currentDetailId);
     if(!e) return;
-    const text = `[${e.category}] ${e.question}\n\n${e.answer}`;
+    const text = `[${e.category}] ${e.question}\n\n${answerHtmlToText(e.answer)}`;
     try{ await navigator.clipboard.writeText(text); }
     catch(err){
       const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select();
@@ -2899,44 +4058,41 @@
     wrap.classList.remove("hidden");
     quickPopularIndex = Math.max(0, Math.min(quickPopularIndex, top.length - 1));
 
-    // viewport 안에는 항상 질문 항목 하나만 유지합니다.
-    const tickerItem = document.createElement("div");
-    tickerItem.className = "qp-item";
-    viewport.replaceChildren(tickerItem);
-
-    const paint = (index)=>{
+    const makeItem = (index, entering=false)=>{
       const item = top[index];
-      tickerItem.innerHTML =
+      const node = document.createElement("div");
+      node.className = "qp-item" + (entering ? " qp-enter" : "");
+      node.innerHTML =
         `<span class="qp-rank">${index + 1}</span>` +
         `<span class="qp-text">${escapeHtml(item.question || "제목 없음")}</span>`;
-      tickerItem.onclick = ()=> openDetail(item.id);
+      node.addEventListener("click", ()=> openDetail(item.id));
+      return node;
     };
 
-    paint(quickPopularIndex);
+    viewport.replaceChildren(makeItem(quickPopularIndex));
 
     if(top.length > 1){
       quickPopularTimer = setInterval(()=>{
         if(generation !== quickPopularGeneration) return;
 
-        tickerItem.classList.add("out");
+        const current = viewport.querySelector(".qp-item");
+        const nextIndex = (quickPopularIndex + 1) % top.length;
+        const next = makeItem(nextIndex, true);
+        viewport.appendChild(next);
+
+        requestAnimationFrame(()=>{
+          requestAnimationFrame(()=>{
+            if(generation !== quickPopularGeneration) return;
+            current?.classList.add("qp-exit");
+            next.classList.remove("qp-enter");
+          });
+        });
 
         setTimeout(()=>{
           if(generation !== quickPopularGeneration) return;
-
-          quickPopularIndex = (quickPopularIndex + 1) % top.length;
-          paint(quickPopularIndex);
-
-          tickerItem.classList.remove("out");
-          tickerItem.classList.add("in-start");
-
-          requestAnimationFrame(()=>{
-            requestAnimationFrame(()=>{
-              if(generation === quickPopularGeneration){
-                tickerItem.classList.remove("in-start");
-              }
-            });
-          });
-        }, 190);
+          current?.remove();
+          quickPopularIndex = nextIndex;
+        }, 430);
       }, 2800);
     }
   }
@@ -3050,7 +4206,7 @@
     $("modalTitleText").textContent = "새 질문 등록";
     renderCatPillSelect();
     $("qInput").value = "";
-    $("aInput").value = "";
+    $("aInput").innerHTML = "";
     $("authorInput").value = "";
     $("noticeInput").checked = false;
     setStatusToggle("active");
@@ -3070,7 +4226,7 @@
     $("modalTitleText").textContent = "질문 수정";
     renderCatPillSelect();
     $("qInput").value = e.question;
-    $("aInput").value = e.answer;
+    $("aInput").innerHTML = normalizeAnswerHtml(e.answer);
     $("authorInput").value = e.author||"";
     $("noticeInput").checked = Boolean(e.isNotice);
     setStatusToggle(e.status);
@@ -3097,7 +4253,7 @@
       editingId: editingId || null,
       category: selectedCat || "",
       question: $("qInput").value,
-      answer: $("aInput").value,
+      answer: sanitizeRichHtml($("aInput").innerHTML),
       author: $("authorInput").value,
       status: statusEl ? statusEl.getAttribute("data-v") : "active",
       isNotice: $("noticeInput").checked,
@@ -3140,7 +4296,7 @@
       editingId: editingId || null,
       category: selectedCat,
       question: $("qInput").value,
-      answer: $("aInput").value,
+      answer: sanitizeRichHtml($("aInput").innerHTML),
       author: $("authorInput").value,
       status: document.querySelector("#statusToggle div.sel")?.getAttribute("data-v") || "active",
       isNotice: $("noticeInput").checked,
@@ -3173,7 +4329,7 @@
 
       selectedCat = CATS.includes(draft.category) ? draft.category : CATS[0];
       $("qInput").value = draft.question || "";
-      $("aInput").value = draft.answer || "";
+      $("aInput").innerHTML = normalizeAnswerHtml(draft.answer || "");
       $("authorInput").value = draft.author || "";
       $("noticeInput").checked = Boolean(draft.isNotice);
       currentFiles = Array.isArray(draft.files) ? draft.files : [];
@@ -3187,6 +4343,766 @@
       return false;
     }
   }
+
+
+  // ---------- rich text editor ----------
+  const answerEditor = $("aInput");
+  let savedEditorRange = null;
+
+  function saveEditorSelection(){
+    const selection = window.getSelection();
+    if(!selection || !selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    if(answerEditor.contains(range.commonAncestorContainer)){
+      savedEditorRange = range.cloneRange();
+    }
+  }
+
+  function restoreEditorSelection(){
+    if(!savedEditorRange) return false;
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(savedEditorRange);
+    return true;
+  }
+
+  ["keyup","mouseup","touchend","input"].forEach(type=>{
+    answerEditor.addEventListener(type, saveEditorSelection);
+  });
+  document.addEventListener("selectionchange", ()=>{
+    const selection = window.getSelection();
+    if(!selection || !selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    if(answerEditor.contains(range.commonAncestorContainer)){
+      savedEditorRange = range.cloneRange();
+    }
+  });
+
+  $("richToolbar").addEventListener("mousedown", event=>{
+    // 버튼 클릭 시에는 선택 영역을 유지하고,
+    // 색상 선택 input은 기본 색상창이 정상적으로 열리도록 막지 않습니다.
+    if(event.target.closest("button")) event.preventDefault();
+  });
+
+  document.querySelectorAll("[data-rich-command]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      answerEditor.focus();
+      restoreEditorSelection();
+      document.execCommand(btn.getAttribute("data-rich-command"), false, null);
+      saveEditorSelection();
+    });
+  });
+
+
+  function getUsableEditorRange(){
+    const selection = window.getSelection();
+    if(selection && selection.rangeCount){
+      const current = selection.getRangeAt(0);
+      if(answerEditor.contains(current.commonAncestorContainer)){
+        savedEditorRange = current.cloneRange();
+      }
+    }
+    if(savedEditorRange && answerEditor.contains(savedEditorRange.commonAncestorContainer)){
+      return savedEditorRange.cloneRange();
+    }
+    return null;
+  }
+
+  function applyStyleToSelectedText(styleName, styleValue){
+    const range = getUsableEditorRange();
+    if(!range || range.collapsed){
+      showToast("서식을 적용할 글자를 먼저 드래그해주세요");
+      return false;
+    }
+
+    const span = document.createElement("span");
+    span.style[styleName] = styleValue;
+
+    try{
+      range.surroundContents(span);
+    }catch(e){
+      const fragment = range.extractContents();
+      span.appendChild(fragment);
+      range.insertNode(span);
+    }
+
+    const selection = window.getSelection();
+    const nextRange = document.createRange();
+    nextRange.selectNodeContents(span);
+    selection.removeAllRanges();
+    selection.addRange(nextRange);
+    savedEditorRange = nextRange.cloneRange();
+    answerEditor.focus();
+    return true;
+  }
+
+
+
+
+
+
+
+  const RICH_COLORS = [
+    "#222222","#555555","#8A8A8A","#D94B42","#FF7A2F","#E6A700",
+    "#2E8B57","#2F80ED","#6C5CE7","#C039B8","#FFFFFF","#FFF1E8",
+    "#FFF7CC","#E9F7EF","#EAF3FF","#F2ECFF","#F7E8F3","#EDEDED"
+  ];
+
+  function positionRichPopover(popover, trigger){
+    if(!popover || !trigger) return;
+
+    const rect = trigger.getBoundingClientRect();
+    const pad = 8;
+    const gap = 8;
+    const isMobile = window.matchMedia("(max-width:679px)").matches;
+    const isTable = popover.classList.contains("table-popover");
+
+    const width = popover.offsetWidth || (isTable ? Math.min(300, window.innerWidth - 16) : 198);
+    const height = popover.offsetHeight || (isTable ? 390 : 210);
+
+    let left;
+    let top;
+
+    if(isMobile && isTable){
+      // 넓은 표 메뉴는 버튼 바로 아래에 두고 화면 안쪽으로 정렬
+      left = rect.right - width;
+      left = Math.max(pad, Math.min(left, window.innerWidth - width - pad));
+
+      top = rect.bottom + gap;
+      if(top + height > window.innerHeight - pad){
+        top = rect.top - height - gap;
+      }
+      top = Math.max(pad, Math.min(top, window.innerHeight - height - pad));
+    }else{
+      // 글자색처럼 작은 팝업은 버튼 옆에 표시
+      left = rect.right + gap;
+      top = rect.top;
+
+      if(left + width > window.innerWidth - pad){
+        left = rect.left - width - gap;
+      }
+      left = Math.max(pad, Math.min(left, window.innerWidth - width - pad));
+
+      if(top + height > window.innerHeight - pad){
+        top = window.innerHeight - height - pad;
+      }
+      top = Math.max(pad, top);
+    }
+
+    popover.style.left = `${Math.round(left)}px`;
+    popover.style.top = `${Math.round(top)}px`;
+    popover.style.right = "auto";
+    popover.style.bottom = "auto";
+  }
+
+  function closeRichPopovers(){
+    $("textColorPopover")?.classList.remove("show");
+    $("tablePopover")?.classList.remove("show");
+    $("tableGridPanel")?.classList.remove("show");
+    $("cellColorPanel")?.classList.remove("show");
+  }
+
+  function buildColorPalette(containerId, onPick){
+    const wrap = $(containerId);
+    if(!wrap) return;
+    wrap.innerHTML = RICH_COLORS.map(color=>
+      `<button type="button" class="color-swatch-btn" data-color="${color}" style="background:${color}" aria-label="${color}"></button>`
+    ).join("");
+    wrap.querySelectorAll("[data-color]").forEach(btn=>{
+      btn.addEventListener("mousedown", e=>e.preventDefault());
+      btn.addEventListener("click", ()=>{
+        onPick(btn.getAttribute("data-color"));
+      });
+    });
+  }
+
+  function applyColorToSelection(color){
+    const range = savedEditorRange?.cloneRange();
+    if(!range || range.collapsed || !answerEditor.contains(range.commonAncestorContainer)){
+      showToast("색상을 바꿀 글자를 먼저 드래그해주세요");
+      return false;
+    }
+
+    const span = document.createElement("span");
+    span.style.color = color;
+    try{
+      range.surroundContents(span);
+    }catch(e){
+      const frag = range.extractContents();
+      span.appendChild(frag);
+      range.insertNode(span);
+    }
+
+    const selection = window.getSelection();
+    const next = document.createRange();
+    next.selectNodeContents(span);
+    selection.removeAllRanges();
+    selection.addRange(next);
+    savedEditorRange = next.cloneRange();
+    answerEditor.focus();
+    return true;
+  }
+
+  function getSelectedCells(){
+    const marked = [...answerEditor.querySelectorAll("td.cell-selected,th.cell-selected")];
+    if(marked.length) return marked;
+
+    const range = savedEditorRange?.cloneRange();
+    if(!range) return [];
+    let node = range.startContainer;
+    if(node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    const cell = node?.closest?.("td,th");
+    return cell && answerEditor.contains(cell) ? [cell] : [];
+  }
+
+  function clearCellSelection(){
+    answerEditor.querySelectorAll("td.cell-selected,th.cell-selected")
+      .forEach(cell=>cell.classList.remove("cell-selected"));
+  }
+
+  const cellResizeHandle = $("cellResizeHandle");
+  let activeResizeCell = null;
+  let cellResizeStartX = 0;
+  let cellResizeStartY = 0;
+  let cellResizeStartWidth = 0;
+  let cellResizeStartHeight = 0;
+
+  function positionCellResizeHandle(cell){
+    if(!cell || !answerEditor.contains(cell)){
+      cellResizeHandle.classList.remove("show");
+      activeResizeCell = null;
+      return;
+    }
+    activeResizeCell = cell;
+    const wrapRect = document.querySelector(".rich-editor-wrap").getBoundingClientRect();
+    const cellRect = cell.getBoundingClientRect();
+    cellResizeHandle.style.left = `${cellRect.right - wrapRect.left - 8}px`;
+    cellResizeHandle.style.top = `${cellRect.bottom - wrapRect.top - 8}px`;
+    cellResizeHandle.classList.add("show");
+  }
+
+  function refreshSelectedCellHandle(){
+    const selected = [...answerEditor.querySelectorAll("td.cell-selected,th.cell-selected")];
+    positionCellResizeHandle(selected.length === 1 ? selected[0] : null);
+  }
+
+  function applyCellColor(color){
+    const cells = getSelectedCells();
+    if(!cells.length){
+      showToast("색상을 바꿀 표 셀 안을 먼저 눌러주세요");
+      return false;
+    }
+    cells.forEach(cell=>cell.style.backgroundColor = color);
+    answerEditor.focus();
+    return true;
+  }
+
+
+  let cellDragSelecting = false;
+  let cellDragMode = "add";
+
+  answerEditor.addEventListener("pointerdown", event=>{
+    const cell = event.target.closest("td,th");
+    if(!cell || !answerEditor.contains(cell)) return;
+
+    event.preventDefault();
+    cellDragSelecting = true;
+    cellDragMode = cell.classList.contains("cell-selected") ? "remove" : "add";
+
+    if(!event.ctrlKey && !event.metaKey && !event.shiftKey){
+      clearCellSelection();
+      cellDragMode = "add";
+    }
+    cell.classList.toggle("cell-selected", cellDragMode === "add");
+    savedEditorRange = null;
+    positionTableResizeHandle(cell.closest("table"));
+    requestAnimationFrame(refreshSelectedCellHandle);
+    answerEditor.setPointerCapture?.(event.pointerId);
+  });
+
+  answerEditor.addEventListener("pointermove", event=>{
+    if(!cellDragSelecting) return;
+    const el = document.elementFromPoint(event.clientX, event.clientY);
+    const cell = el?.closest?.("td,th");
+    if(cell && answerEditor.contains(cell)){
+      cell.classList.toggle("cell-selected", cellDragMode === "add");
+      requestAnimationFrame(refreshSelectedCellHandle);
+    }
+  });
+
+  const finishCellDrag = event=>{
+    if(!cellDragSelecting) return;
+    cellDragSelecting = false;
+    try{ answerEditor.releasePointerCapture?.(event.pointerId); }catch(e){}
+    refreshSelectedCellHandle();
+  };
+  answerEditor.addEventListener("pointerup", finishCellDrag);
+  answerEditor.addEventListener("pointercancel", finishCellDrag);
+
+  buildColorPalette("textColorPalette", color=>{
+    $("richTextColorSwatch").style.background = color;
+    applyColorToSelection(color);
+    closeRichPopovers();
+  });
+
+  let selectedCellBaseColor = "#FFF1E8";
+
+  function hexToRgba(hex, opacityPercent){
+    const clean = String(hex).replace("#","");
+    const full = clean.length === 3
+      ? clean.split("").map(ch=>ch+ch).join("")
+      : clean.padEnd(6,"0").slice(0,6);
+    const r = parseInt(full.slice(0,2),16);
+    const g = parseInt(full.slice(2,4),16);
+    const b = parseInt(full.slice(4,6),16);
+    const a = Math.max(0, Math.min(100, Number(opacityPercent))) / 100;
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  }
+
+  function currentCellBackground(){
+    return hexToRgba(selectedCellBaseColor, $("cellOpacityRange").value);
+  }
+
+  buildColorPalette("cellColorPalette", color=>{
+    selectedCellBaseColor = color;
+    applyCellColor(currentCellBackground());
+  });
+
+  $("cellOpacityRange").addEventListener("input", ()=>{
+    const value = $("cellOpacityRange").value;
+    $("cellOpacityValue").textContent = `${value}%`;
+    const cells = getSelectedCells();
+    if(cells.length){
+      cells.forEach(cell=>cell.style.backgroundColor = currentCellBackground());
+    }
+  });
+
+  $("clearCellColorBtn").addEventListener("mousedown", e=>e.preventDefault());
+  $("clearCellColorBtn").addEventListener("click", ()=>{
+    const cells = getSelectedCells();
+    if(!cells.length){
+      showToast("배경색을 지울 표 셀 안을 먼저 눌러주세요");
+      return;
+    }
+    cells.forEach(cell=>cell.style.backgroundColor = "transparent");
+    closeRichPopovers();
+  });
+
+  $("textColorBtn").addEventListener("mousedown", e=>e.preventDefault());
+  $("textColorBtn").addEventListener("click", e=>{
+    e.stopPropagation();
+    const pop = $("textColorPopover");
+    const willShow = !pop.classList.contains("show");
+    closeRichPopovers();
+    if(willShow){
+      pop.classList.add("show");
+      requestAnimationFrame(()=>positionRichPopover(pop, $("textColorBtn")));
+    }
+  });
+
+  $("tableMenuBtn").addEventListener("mousedown", e=>e.preventDefault());
+  $("tableMenuBtn").addEventListener("click", e=>{
+    e.stopPropagation();
+    const pop = $("tablePopover");
+    const willShow = !pop.classList.contains("show");
+    closeRichPopovers();
+    if(willShow){
+      pop.classList.add("show");
+      requestAnimationFrame(()=>positionRichPopover(pop, $("tableMenuBtn")));
+    }
+  });
+
+
+  $("toggleCellBoldBtn").addEventListener("mousedown", e=>e.preventDefault());
+  $("toggleCellBoldBtn").addEventListener("click", ()=>{
+    const cells = getSelectedCells();
+    if(!cells.length){
+      showToast("테두리를 굵게 만들 셀을 먼저 선택해주세요");
+      return;
+    }
+
+    const shouldBold = cells.some(cell=>{
+      const width = parseFloat(getComputedStyle(cell).borderTopWidth) || 0;
+      return width < 1.5;
+    });
+
+    cells.forEach(cell=>{
+      const color = shouldBold ? "#C8C8CD" : "#D6D6DB";
+      const width = shouldBold ? "2px" : "1px";
+      cell.style.borderTop = `${width} solid ${color}`;
+      cell.style.borderRight = `${width} solid ${color}`;
+      cell.style.borderBottom = `${width} solid ${color}`;
+      cell.style.borderLeft = `${width} solid ${color}`;
+    });
+
+    showToast(shouldBold ? "선택한 셀 테두리를 살짝 굵게 했어요" : "셀 테두리를 기본으로 되돌렸어요");
+  });
+
+  $("addTableRowBtn").addEventListener("mousedown", e=>e.preventDefault());
+  $("addTableRowBtn").addEventListener("click", ()=>{
+    const selectedCell = getSelectedCells()[0];
+    const table = selectedCell?.closest("table") || activeResizeTable || answerEditor.querySelector("table:last-of-type");
+    if(!table){
+      showToast("행을 추가할 표를 먼저 눌러주세요");
+      return;
+    }
+
+    const sourceRow = selectedCell?.parentElement || table.rows[table.rows.length - 1];
+    const insertIndex = selectedCell ? sourceRow.rowIndex + 1 : table.rows.length;
+    const newRow = table.insertRow(insertIndex);
+    const columnCount = Math.max(1, sourceRow?.cells?.length || table.rows[0]?.cells?.length || 1);
+
+    for(let i=0; i<columnCount; i++){
+      const newCell = newRow.insertCell();
+      newCell.innerHTML = "<br>";
+      const sourceCell = sourceRow?.cells?.[i];
+      if(sourceCell){
+        const width = sourceCell.style.width || `${Math.round(sourceCell.getBoundingClientRect().width)}px`;
+        newCell.style.width = width;
+        newCell.style.minWidth = width;
+      }
+    }
+
+    clearCellSelection();
+    newRow.cells[0]?.classList.add("cell-selected");
+    positionTableResizeHandle(table);
+    positionCellResizeHandle(newRow.cells[0]);
+    showToast("행을 1개 추가했어요");
+    closeRichPopovers();
+  });
+
+  $("addTableColumnBtn").addEventListener("mousedown", e=>e.preventDefault());
+  $("addTableColumnBtn").addEventListener("click", ()=>{
+    const selectedCell = getSelectedCells()[0];
+    const table = selectedCell?.closest("table") || activeResizeTable || answerEditor.querySelector("table:last-of-type");
+    if(!table){
+      showToast("열을 추가할 표를 먼저 눌러주세요");
+      return;
+    }
+
+    const insertIndex = selectedCell ? selectedCell.cellIndex + 1 : table.rows[0]?.cells.length || 0;
+    let firstNewCell = null;
+
+    [...table.rows].forEach((row, rowIndex)=>{
+      const sourceCell = row.cells[Math.max(0, insertIndex - 1)] || row.cells[row.cells.length - 1];
+      const newCell = rowIndex === 0
+        ? document.createElement("th")
+        : document.createElement("td");
+
+      newCell.innerHTML = "<br>";
+
+      if(sourceCell){
+        const width = sourceCell.style.width || `${Math.round(sourceCell.getBoundingClientRect().width)}px`;
+        newCell.style.width = width;
+        newCell.style.minWidth = width;
+        newCell.style.height = sourceCell.style.height || "";
+        newCell.style.minHeight = sourceCell.style.minHeight || "";
+      }
+
+      if(insertIndex >= row.cells.length) row.appendChild(newCell);
+      else row.insertBefore(newCell, row.cells[insertIndex]);
+
+      if(!firstNewCell) firstNewCell = newCell;
+    });
+
+    clearCellSelection();
+    firstNewCell?.classList.add("cell-selected");
+    positionTableResizeHandle(table);
+    positionCellResizeHandle(firstNewCell);
+    showToast("열을 1개 추가했어요");
+    closeRichPopovers();
+  });
+
+
+  $("openTableGridBtn").addEventListener("mousedown", e=>e.preventDefault());
+  $("openTableGridBtn").addEventListener("click", ()=>{
+    $("cellColorPanel").classList.remove("show");
+    $("tableGridPanel").classList.toggle("show");
+  });
+
+  $("openCellColorBtn").addEventListener("mousedown", e=>e.preventDefault());
+  $("openCellColorBtn").addEventListener("click", ()=>{
+    $("tableGridPanel").classList.remove("show");
+    $("cellColorPanel").classList.toggle("show");
+  });
+
+  function insertTable(rows, cols){
+    const table = document.createElement("table");
+    const tbody = document.createElement("tbody");
+
+    for(let r=0; r<rows; r++){
+      const tr = document.createElement("tr");
+      for(let c=0; c<cols; c++){
+        const cell = document.createElement(r === 0 ? "th" : "td");
+        cell.innerHTML = "<br>";
+        tr.appendChild(cell);
+      }
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+
+    const spacer = document.createElement("p");
+    spacer.innerHTML = "<br>";
+
+    answerEditor.focus();
+    let range = savedEditorRange?.cloneRange();
+    if(!range || !answerEditor.contains(range.commonAncestorContainer)){
+      range = document.createRange();
+      range.selectNodeContents(answerEditor);
+      range.collapse(false);
+    }
+    range.collapse(false);
+
+    const frag = document.createDocumentFragment();
+    frag.appendChild(table);
+    frag.appendChild(spacer);
+    range.insertNode(frag);
+
+    const firstCell = table.querySelector("th,td");
+    const selection = window.getSelection();
+    const next = document.createRange();
+    next.selectNodeContents(firstCell);
+    next.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(next);
+    savedEditorRange = next.cloneRange();
+    setTimeout(()=>positionTableResizeHandle(table), 0);
+
+    closeRichPopovers();
+    showToast(`${rows}행 × ${cols}열 표를 만들었어요`);
+  }
+
+
+
+  // ---------- individual cell resize ----------
+  cellResizeHandle.addEventListener("pointerdown", event=>{
+    if(!activeResizeCell) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = activeResizeCell.getBoundingClientRect();
+    cellResizeStartX = event.clientX;
+    cellResizeStartY = event.clientY;
+    cellResizeStartWidth = rect.width;
+    cellResizeStartHeight = rect.height;
+    cellResizeHandle.setPointerCapture?.(event.pointerId);
+  });
+
+  cellResizeHandle.addEventListener("pointermove", event=>{
+    if(!activeResizeCell || !cellResizeStartWidth) return;
+
+    const newWidth = Math.max(48, cellResizeStartWidth + (event.clientX - cellResizeStartX));
+    const newHeight = Math.max(34, cellResizeStartHeight + (event.clientY - cellResizeStartY));
+
+    activeResizeCell.style.width = `${Math.round(newWidth)}px`;
+    activeResizeCell.style.minWidth = `${Math.round(newWidth)}px`;
+    activeResizeCell.style.height = `${Math.round(newHeight)}px`;
+    activeResizeCell.style.minHeight = `${Math.round(newHeight)}px`;
+
+    const row = activeResizeCell.parentElement;
+    if(row) row.style.height = `${Math.round(newHeight)}px`;
+
+    positionCellResizeHandle(activeResizeCell);
+    positionTableResizeHandle(activeResizeCell.closest("table"));
+  });
+
+  function finishCellResize(event){
+    if(!cellResizeStartWidth) return;
+    cellResizeStartWidth = 0;
+    cellResizeStartHeight = 0;
+    try{ cellResizeHandle.releasePointerCapture?.(event.pointerId); }catch(e){}
+    if(activeResizeCell) positionCellResizeHandle(activeResizeCell);
+  }
+  cellResizeHandle.addEventListener("pointerup", finishCellResize);
+  cellResizeHandle.addEventListener("pointercancel", finishCellResize);
+
+  // ---------- table width resize ----------
+  const tableResizeHandle = $("tableResizeHandle");
+  let activeResizeTable = null;
+  let resizeStartX = 0;
+  let resizeStartWidth = 0;
+  let resizeStartHeight = 0;
+  let resizeStartRowHeights = [];
+
+  function positionTableResizeHandle(table){
+    if(!table || !answerEditor.contains(table)){
+      tableResizeHandle.classList.remove("show");
+      activeResizeTable?.classList.remove("is-resizing-table");
+      activeResizeTable = null;
+      return;
+    }
+
+    activeResizeTable?.classList.remove("is-resizing-table");
+    activeResizeTable = table;
+    activeResizeTable.classList.add("is-resizing-table");
+
+    const wrapRect = document.querySelector(".rich-editor-wrap").getBoundingClientRect();
+    const tableRect = table.getBoundingClientRect();
+    tableResizeHandle.style.left = `${tableRect.right - wrapRect.left - 9}px`;
+    tableResizeHandle.style.top = `${tableRect.bottom - wrapRect.top - 9}px`;
+    tableResizeHandle.classList.add("show");
+  }
+
+  answerEditor.addEventListener("click", event=>{
+    const table = event.target.closest("table");
+    if(table) positionTableResizeHandle(table);
+    else if(!event.target.closest(".table-resize-handle")) positionTableResizeHandle(null);
+  });
+
+  answerEditor.addEventListener("scroll", ()=>{
+    if(activeResizeTable) positionTableResizeHandle(activeResizeTable);
+    if(activeResizeCell) positionCellResizeHandle(activeResizeCell);
+  });
+
+  window.addEventListener("resize", ()=>{
+    if(activeResizeTable) positionTableResizeHandle(activeResizeTable);
+    if(activeResizeCell) positionCellResizeHandle(activeResizeCell);
+  });
+
+  tableResizeHandle.addEventListener("pointerdown", event=>{
+    if(!activeResizeTable) return;
+    event.preventDefault();
+    event.stopPropagation();
+    resizeStartX = event.clientX;
+    tableResizeHandle._resizeStartY = event.clientY;
+    const tableRect = activeResizeTable.getBoundingClientRect();
+    resizeStartWidth = tableRect.width;
+    resizeStartHeight = tableRect.height;
+    resizeStartRowHeights = [...activeResizeTable.rows].map(row=>row.getBoundingClientRect().height);
+    tableResizeHandle.setPointerCapture?.(event.pointerId);
+  });
+
+  tableResizeHandle.addEventListener("pointermove", event=>{
+    if(!activeResizeTable || !resizeStartWidth) return;
+    const editorWidth = answerEditor.clientWidth - 26;
+    const dx = event.clientX - resizeStartX;
+    const dy = event.clientY - (tableResizeHandle._resizeStartY || event.clientY);
+    const newWidth = Math.max(180, Math.min(editorWidth, resizeStartWidth + dx));
+    const newHeight = Math.max(activeResizeTable.rows.length * 34, resizeStartHeight + dy);
+
+    activeResizeTable.style.width = `${Math.round(newWidth)}px`;
+    activeResizeTable.style.maxWidth = "100%";
+
+    const ratio = resizeStartHeight > 0 ? newHeight / resizeStartHeight : 1;
+    [...activeResizeTable.rows].forEach((row, index)=>{
+      const h = Math.max(34, (resizeStartRowHeights[index] || 34) * ratio);
+      row.style.height = `${Math.round(h)}px`;
+      [...row.cells].forEach(cell=>cell.style.height = `${Math.round(h)}px`);
+    });
+    positionTableResizeHandle(activeResizeTable);
+  });
+
+  function finishTableResize(event){
+    if(!resizeStartWidth) return;
+    resizeStartWidth = 0;
+    resizeStartHeight = 0;
+    resizeStartRowHeights = [];
+    try{ tableResizeHandle.releasePointerCapture?.(event.pointerId); }catch(e){}
+    if(activeResizeTable) positionTableResizeHandle(activeResizeTable);
+  }
+  tableResizeHandle.addEventListener("pointerup", finishTableResize);
+  tableResizeHandle.addEventListener("pointercancel", finishTableResize);
+
+  const gridPicker = $("tableGridPicker");
+  for(let r=1; r<=6; r++){
+    for(let c=1; c<=6; c++){
+      const cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "table-grid-cell";
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+      cell.setAttribute("aria-label", `${r}행 ${c}열`);
+      cell.addEventListener("mouseenter", ()=>{
+        $("tableGridTitle").textContent = `${r}행 × ${c}열`;
+        gridPicker.querySelectorAll(".table-grid-cell").forEach(item=>{
+          const ir = Number(item.dataset.row);
+          const ic = Number(item.dataset.col);
+          item.classList.toggle("active", ir <= r && ic <= c);
+        });
+      });
+      cell.addEventListener("mousedown", e=>e.preventDefault());
+      cell.addEventListener("click", ()=>insertTable(r,c));
+      gridPicker.appendChild(cell);
+    }
+  }
+  gridPicker.addEventListener("mouseleave", ()=>{
+    $("tableGridTitle").textContent = "표 크기 선택";
+    gridPicker.querySelectorAll(".table-grid-cell").forEach(item=>item.classList.remove("active"));
+  });
+
+  document.addEventListener("pointerdown", e=>{
+    const insideCell = e.target.closest?.("#aInput td, #aInput th");
+    const insideToolbar = e.target.closest?.(".rich-tool-menu-wrap");
+    const onTableHandle = e.target.closest?.("#tableResizeHandle");
+    const onCellHandle = e.target.closest?.("#cellResizeHandle");
+
+    if(!insideCell && !insideToolbar && !onTableHandle && !onCellHandle){
+      clearCellSelection();
+      positionCellResizeHandle(null);
+    }
+
+    const table = e.target.closest?.("#aInput table");
+    if(table) positionTableResizeHandle(table);
+  });
+
+
+  function repositionOpenRichPopover(){
+    const colorPop = $("textColorPopover");
+    const tablePop = $("tablePopover");
+    if(colorPop?.classList.contains("show")){
+      positionRichPopover(colorPop, $("textColorBtn"));
+    }
+    if(tablePop?.classList.contains("show")){
+      positionRichPopover(tablePop, $("tableMenuBtn"));
+    }
+  }
+
+  window.addEventListener("resize", repositionOpenRichPopover);
+  window.addEventListener("orientationchange", ()=>{
+    setTimeout(repositionOpenRichPopover, 120);
+  });
+
+  document.addEventListener("click", e=>{
+    if(!e.target.closest(".rich-tool-menu-wrap")) closeRichPopovers();
+    if(!e.target.closest("#aInput table") &&
+       !e.target.closest("#tableResizeHandle") &&
+       !e.target.closest("#cellResizeHandle")){
+      positionTableResizeHandle(null);
+    }
+  });
+
+  answerEditor.addEventListener("paste", event=>{
+    const html = event.clipboardData?.getData("text/html");
+    if(!html) return;
+
+    event.preventDefault();
+    const cleaned = sanitizeRichHtml(html);
+    document.execCommand("insertHTML", false, cleaned || plainTextToHtml(event.clipboardData.getData("text/plain")));
+  });
+
+  answerEditor.addEventListener("keydown", event=>{
+    if(event.key === "Tab"){
+      const selection = window.getSelection();
+      let node = selection?.anchorNode;
+      if(node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+      const cell = node?.closest?.("td,th");
+      if(cell && answerEditor.contains(cell)){
+        event.preventDefault();
+        const cells = [...answerEditor.querySelectorAll("td,th")];
+        const idx = cells.indexOf(cell);
+        const next = cells[idx + (event.shiftKey ? -1 : 1)];
+        if(next){
+          const range = document.createRange();
+          range.selectNodeContents(next);
+          range.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          next.focus();
+          saveEditorSelection();
+        }
+      }
+    }
+  });
+
 
   $("modalClose").addEventListener("click", ()=>requestCloseModal("x"));
   overlay.addEventListener("click",(e)=>{ if(e.target===overlay) requestCloseModal("outside"); });
@@ -3303,7 +5219,7 @@
 
   $("submitBtn").addEventListener("click", async ()=>{
     const q = $("qInput").value.trim();
-    const a = $("aInput").value.trim();
+    const a = sanitizeRichHtml($("aInput").innerHTML).trim();
     const author = $("authorInput").value.trim();
     const isNotice = $("noticeInput").checked;
     const statusEl = document.querySelector("#statusToggle div.sel");
