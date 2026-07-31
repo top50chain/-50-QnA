@@ -1413,6 +1413,70 @@
   .qp-viewport .qp-item{ position:absolute; left:0; right:0; top:0; }
   .qp-viewport .qp-item:not(:last-child){ pointer-events:none; }
 
+
+  /* ---------- unsaved-change confirmation / draft ---------- */
+  .save-confirm-overlay{
+    position:fixed; inset:0; z-index:180;
+    display:none; align-items:center; justify-content:center;
+    padding:20px;
+    background:rgba(20,18,16,.42);
+  }
+  .save-confirm-overlay.show{ display:flex; }
+  .save-confirm-box{
+    width:min(360px, 100%);
+    background:#fff;
+    border-radius:20px;
+    padding:22px 20px 18px;
+    box-shadow:0 18px 50px rgba(25,25,25,.20);
+  }
+  .save-confirm-title{
+    margin:0 0 8px;
+    font-size:17px;
+    font-weight:800;
+    color:var(--ink);
+    letter-spacing:-.02em;
+  }
+  .save-confirm-desc{
+    margin:0 0 18px;
+    font-size:13px;
+    line-height:1.55;
+    color:var(--ink-2);
+  }
+  .save-confirm-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .save-confirm-actions button{
+    border:none;
+    border-radius:12px;
+    min-height:43px;
+    padding:10px 12px;
+    font-size:13px;
+    font-weight:750;
+    cursor:pointer;
+  }
+  .save-confirm-save{
+    grid-column:1 / -1;
+    background:var(--orange);
+    color:#fff;
+  }
+  .save-confirm-draft{
+    background:var(--orange-050);
+    color:#B45F27;
+    border:1px solid #F2D8C7 !important;
+  }
+  .save-confirm-discard{
+    background:#F5F5F6;
+    color:#66666B;
+  }
+  .save-confirm-cancel{
+    grid-column:1 / -1;
+    background:transparent;
+    color:#8A8A90;
+    min-height:36px !important;
+  }
+
 </style>
 </head>
 <body>
@@ -1577,6 +1641,20 @@
   </div>
 </div>
 
+
+<div class="save-confirm-overlay" id="saveConfirmOverlay" aria-hidden="true">
+  <div class="save-confirm-box" role="dialog" aria-modal="true" aria-labelledby="saveConfirmTitle">
+    <h3 class="save-confirm-title" id="saveConfirmTitle">작성 중인 내용을 저장할까요?</h3>
+    <p class="save-confirm-desc" id="saveConfirmDesc">저장하지 않고 나가면 입력한 내용이 사라져요.</p>
+    <div class="save-confirm-actions">
+      <button type="button" class="save-confirm-save" id="confirmSaveBtn">저장하기</button>
+      <button type="button" class="save-confirm-draft" id="confirmDraftBtn">임시저장</button>
+      <button type="button" class="save-confirm-discard" id="confirmDiscardBtn">저장 안 함</button>
+      <button type="button" class="save-confirm-cancel" id="confirmCancelBtn">계속 작성</button>
+    </div>
+  </div>
+</div>
+
 <div class="lightbox" id="lightbox"><img id="lightboxImg" src=""></div>
 <div class="overlay" id="trashOverlay">
   <div class="modal trash-modal">
@@ -1597,6 +1675,7 @@
 <script>
 (function(){
   const STORAGE_KEY = "oddum50_faq_entries_v3";
+  const DRAFT_KEY = "oddum50_question_draft_v1";
   const RECENT_KEY = "oddum50_recent_searches";
   const CATS_KEY = "oddum50_categories_v1";
   const CAT_DESC_KEY = "oddum50_cat_desc_v1";
@@ -2668,6 +2747,10 @@
     setStatusToggle("active");
     renderFileUpload();
     overlay.classList.add("show");
+    modalInitialState = getModalState();
+    setTimeout(()=>{
+      if(loadDraftIfAvailable()) modalInitialState = getModalState();
+    }, 0);
   }
   function openEditModal(id){
     const e = entries.find(x=>x.id===id);
@@ -2685,6 +2768,10 @@
     renderFileUpload();
     closeDetail();
     overlay.classList.add("show");
+    modalInitialState = getModalState();
+    setTimeout(()=>{
+      if(loadDraftIfAvailable()) modalInitialState = getModalState();
+    }, 0);
   }
   function setStatusToggle(v){
     document.querySelectorAll("#statusToggle div").forEach(d=> d.classList.toggle("sel", d.getAttribute("data-v")===v));
@@ -2692,9 +2779,129 @@
   document.querySelectorAll("#statusToggle div").forEach(d=>{
     d.addEventListener("click", ()=> setStatusToggle(d.getAttribute("data-v")));
   });
-  function closeModal(){ overlay.classList.remove("show"); }
-  $("modalClose").addEventListener("click", closeModal);
-  overlay.addEventListener("click",(e)=>{ if(e.target===overlay) closeModal(); });
+  let modalInitialState = "";
+  let pendingCloseReason = null;
+
+  function getModalState(){
+    const statusEl = document.querySelector("#statusToggle div.sel");
+    return JSON.stringify({
+      editingId: editingId || null,
+      category: selectedCat || "",
+      question: $("qInput").value,
+      answer: $("aInput").value,
+      author: $("authorInput").value,
+      status: statusEl ? statusEl.getAttribute("data-v") : "active",
+      isNotice: $("noticeInput").checked,
+      files: currentFiles || []
+    });
+  }
+
+  function hasUnsavedChanges(){
+    return overlay.classList.contains("show") && getModalState() !== modalInitialState;
+  }
+
+  function forceCloseModal(){
+    overlay.classList.remove("show");
+    $("saveConfirmOverlay").classList.remove("show");
+    $("saveConfirmOverlay").setAttribute("aria-hidden","true");
+    pendingCloseReason = null;
+  }
+
+  function openSaveConfirm(reason="close"){
+    pendingCloseReason = reason;
+    const isEdit = Boolean(editingId);
+    $("saveConfirmTitle").textContent = isEdit
+      ? "수정한 내용을 저장할까요?"
+      : "작성 중인 내용을 저장할까요?";
+    $("saveConfirmDesc").textContent =
+      "저장하지 않고 나가면 입력한 내용이 사라져요. 임시저장하면 다음에 다시 이어서 작성할 수 있어요.";
+    $("saveConfirmOverlay").classList.add("show");
+    $("saveConfirmOverlay").setAttribute("aria-hidden","false");
+  }
+
+  function requestCloseModal(reason="close"){
+    if(!overlay.classList.contains("show")) return;
+    if(hasUnsavedChanges()) openSaveConfirm(reason);
+    else forceCloseModal();
+  }
+
+  function saveDraft(){
+    const draft = {
+      savedAt: Date.now(),
+      editingId: editingId || null,
+      category: selectedCat,
+      question: $("qInput").value,
+      answer: $("aInput").value,
+      author: $("authorInput").value,
+      status: document.querySelector("#statusToggle div.sel")?.getAttribute("data-v") || "active",
+      isNotice: $("noticeInput").checked,
+      files: currentFiles || []
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    forceCloseModal();
+    showToast("임시저장했어요 ✓");
+  }
+
+  function clearDraft(){
+    localStorage.removeItem(DRAFT_KEY);
+  }
+
+  function loadDraftIfAvailable(){
+    try{
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if(!raw) return false;
+      const draft = JSON.parse(raw);
+      if(!draft || typeof draft !== "object") return false;
+
+      const matchesCurrentMode =
+        (editingId && String(draft.editingId) === String(editingId)) ||
+        (!editingId && !draft.editingId);
+
+      if(!matchesCurrentMode) return false;
+
+      const restore = confirm("임시저장된 내용이 있어요. 이어서 작성할까요?");
+      if(!restore) return false;
+
+      selectedCat = CATS.includes(draft.category) ? draft.category : CATS[0];
+      $("qInput").value = draft.question || "";
+      $("aInput").value = draft.answer || "";
+      $("authorInput").value = draft.author || "";
+      $("noticeInput").checked = Boolean(draft.isNotice);
+      currentFiles = Array.isArray(draft.files) ? draft.files : [];
+      setStatusToggle(draft.status || "active");
+      renderCatPillSelect();
+      renderFileUpload();
+      showToast("임시저장 내용을 불러왔어요");
+      return true;
+    }catch(e){
+      console.warn("draft restore failed", e);
+      return false;
+    }
+  }
+
+  $("modalClose").addEventListener("click", ()=>requestCloseModal("x"));
+  overlay.addEventListener("click",(e)=>{ if(e.target===overlay) requestCloseModal("outside"); });
+
+  $("confirmSaveBtn").addEventListener("click", async ()=>{
+    $("saveConfirmOverlay").classList.remove("show");
+    $("saveConfirmOverlay").setAttribute("aria-hidden","true");
+    $("submitBtn").click();
+  });
+  $("confirmDraftBtn").addEventListener("click", saveDraft);
+  $("confirmDiscardBtn").addEventListener("click", ()=>{
+    clearDraft();
+    forceCloseModal();
+  });
+  $("confirmCancelBtn").addEventListener("click", ()=>{
+    $("saveConfirmOverlay").classList.remove("show");
+    $("saveConfirmOverlay").setAttribute("aria-hidden","true");
+    pendingCloseReason = null;
+  });
+  $("saveConfirmOverlay").addEventListener("click",(e)=>{
+    if(e.target === $("saveConfirmOverlay")){
+      $("confirmCancelBtn").click();
+    }
+  });
   const fabMenu = $("fabMenu");
   const fabBackdrop = $("fabBackdrop");
   function setFabOpen(open){
@@ -2712,7 +2919,16 @@
 
 
   document.addEventListener("keydown", (e)=>{
-    if(e.key === "Escape" && $("fabMenu")?.classList.contains("open")) setFabOpen(false);
+    if(e.key !== "Escape") return;
+    if($("saveConfirmOverlay")?.classList.contains("show")){
+      $("confirmCancelBtn").click();
+      return;
+    }
+    if(overlay.classList.contains("show")){
+      requestCloseModal("escape");
+      return;
+    }
+    if($("fabMenu")?.classList.contains("open")) setFabOpen(false);
   });
 
   function renderFileUpload(){
@@ -2813,7 +3029,8 @@
         showToast("등록되었어요 ✓");
       }
 
-      closeModal();
+      clearDraft();
+      forceCloseModal();
       renderCatPills();
       renderList();
       renderQuickPopular();
