@@ -1225,6 +1225,28 @@
     cursor:pointer;
   }
   .restore-btn:active{ transform:scale(.97); }
+  .trash-item-actions{
+    flex:none;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .permanent-delete-btn{
+    flex:none;
+    border:1px solid #F1CCCC;
+    background:#FFF6F6;
+    color:#C84545;
+    border-radius:999px;
+    padding:7px 11px;
+    font-size:11.5px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .permanent-delete-btn:active{ transform:scale(.97); }
+  .restore-btn:disabled, .permanent-delete-btn:disabled{
+    opacity:.45;
+    cursor:default;
+  }
 
   .undo-toast{
     position:fixed;
@@ -2312,6 +2334,33 @@
     showToast("복원했어요 ✓");
   }
 
+  async function permanentlyDeleteTrashItem(id, button=null){
+    const item = trashEntries.find(x=>x.id===id);
+    if(!item) return;
+    if(!confirm(`“${item.question || "제목 없음"}”을 영구 삭제할까요?\n\n영구 삭제한 질문은 다시 복원할 수 없어요.`)) return;
+
+    if(button) button.disabled = true;
+    try{
+      const numericId = Number(item.id);
+      if(!Number.isInteger(numericId)) throw new Error("잘못된 게시글 ID입니다.");
+      const { error } = await supabaseClient.from("qna").delete().eq("id", numericId);
+      if(error) throw error;
+
+      trashEntries = trashEntries.filter(x=>x.id!==id);
+      if(lastDeletedId===id){
+        lastDeletedId = null;
+        hideUndoToast();
+      }
+      updateTrashCount();
+      renderTrashList();
+      showToast("영구 삭제했어요");
+    }catch(e){
+      console.error("permanent delete failed", e);
+      showToast("영구 삭제에 실패했어요");
+      if(button) button.disabled = false;
+    }
+  }
+
   $("detailDelBtn").addEventListener("click", async ()=>{
     closeDetailMenu();
     if(!confirm("이 질문을 삭제할까요? 3일 동안 다시 되돌릴 수 있어요.")) return;
@@ -2361,10 +2410,16 @@
           <div class="trash-item-title">${escapeHtml(item.question || "제목 없음")}</div>
           <div class="trash-item-meta">${escapeHtml(item.category || "기타")} · ${remainingTrashText(item.deletedAt)}</div>
         </div>
-        <button class="restore-btn" type="button" data-restore-id="${escapeHtml(item.id)}">복원</button>
+        <div class="trash-item-actions">
+          <button class="restore-btn" type="button" data-restore-id="${escapeHtml(item.id)}">복원</button>
+          <button class="permanent-delete-btn" type="button" data-permanent-delete-id="${escapeHtml(item.id)}">영구삭제</button>
+        </div>
       </div>`).join("");
     el.querySelectorAll("[data-restore-id]").forEach(btn=>{
       btn.addEventListener("click", ()=> restoreTrashItem(btn.getAttribute("data-restore-id")));
+    });
+    el.querySelectorAll("[data-permanent-delete-id]").forEach(btn=>{
+      btn.addEventListener("click", ()=> permanentlyDeleteTrashItem(btn.getAttribute("data-permanent-delete-id"), btn));
     });
   }
   function openTrashModal(){
