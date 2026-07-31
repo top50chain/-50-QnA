@@ -1228,25 +1228,25 @@
   .trash-item-actions{
     flex:none;
     display:flex;
-    align-items:center;
+    flex-direction:column;
+    align-items:stretch;
     gap:6px;
+    min-width:72px;
   }
   .permanent-delete-btn{
-    flex:none;
-    border:1px solid #F1CCCC;
-    background:#FFF6F6;
-    color:#C84545;
+    width:100%;
+    border:1px solid #EFCACA;
+    background:#FFF5F5;
+    color:#C83F3F;
     border-radius:999px;
-    padding:7px 11px;
+    padding:7px 10px;
     font-size:11.5px;
     font-weight:700;
     cursor:pointer;
+    white-space:nowrap;
   }
   .permanent-delete-btn:active{ transform:scale(.97); }
-  .restore-btn:disabled, .permanent-delete-btn:disabled{
-    opacity:.45;
-    cursor:default;
-  }
+  .restore-btn:disabled, .permanent-delete-btn:disabled{ opacity:.45; cursor:default; }
 
   .undo-toast{
     position:fixed;
@@ -2322,16 +2322,22 @@
     const idx = trashEntries.findIndex(x=>x.id===id);
     if(idx < 0) return;
     const item = trashEntries[idx];
-    trashEntries.splice(idx,1);
     const restored = {...item};
     delete restored.deletedAt;
-    entries.push(restored);
-    await Promise.all([saveEntries(), saveTrash()]);
-    updateTrashCount();
-    render();
-    renderTrashList();
-    if(fromUndo) hideUndoToast();
-    showToast("복원했어요 ✓");
+
+    try{
+      await upsertExistingEntry(restored, false);
+      trashEntries.splice(idx,1);
+      entries.push(restored);
+      updateTrashCount();
+      render();
+      renderTrashList();
+      if(fromUndo) hideUndoToast();
+      showToast("복원했어요 ✓");
+    }catch(e){
+      console.error("restore failed", e);
+      showToast("복원에 실패했어요");
+    }
   }
 
   async function permanentlyDeleteTrashItem(id, button=null){
@@ -2347,10 +2353,7 @@
       if(error) throw error;
 
       trashEntries = trashEntries.filter(x=>x.id!==id);
-      if(lastDeletedId===id){
-        lastDeletedId = null;
-        hideUndoToast();
-      }
+      if(lastDeletedId===id){ lastDeletedId=null; hideUndoToast(); }
       updateTrashCount();
       renderTrashList();
       showToast("영구 삭제했어요");
@@ -2667,18 +2670,45 @@
     if(!q){ showToast("질문을 입력해주세요"); return; }
     if(!a){ showToast("답변을 입력해주세요"); return; }
 
-    if(editingId){
-      const e = entries.find(x=>x.id===editingId);
-      if(e){ e.category=selectedCat; e.question=q; e.answer=a; e.author=author; e.status=status; e.files=currentFiles; e.isNotice=isNotice; }
-      showToast("수정되었어요 ✓");
-    } else {
-      entries.push({ id:uid(), category:selectedCat, question:q, answer:a, author, status, files:currentFiles, isNotice, createdAt:Date.now(), copyCount:0, viewCount:0 });
-      showToast("등록되었어요 ✓");
+    const btn = $("submitBtn");
+    const oldText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "저장 중...";
+
+    try{
+      if(editingId){
+        const idx = entries.findIndex(x=>x.id===editingId);
+        if(idx < 0) throw new Error("수정할 질문을 찾을 수 없습니다.");
+        const updated = {
+          ...entries[idx],
+          category:selectedCat, question:q, answer:a, author, status,
+          files:currentFiles, isNotice, updatedAt:Date.now()
+        };
+        await upsertExistingEntry(updated, false);
+        entries[idx] = updated;
+        showToast("수정되었어요 ✓");
+      } else {
+        const created = {
+          id:uid(), category:selectedCat, question:q, answer:a, author, status,
+          files:currentFiles, isNotice, createdAt:Date.now(), copyCount:0, viewCount:0
+        };
+        await insertNewEntry(created, false);
+        entries.unshift(created);
+        showToast("등록되었어요 ✓");
+      }
+
+      closeModal();
+      renderCatPills();
+      renderList();
+      renderQuickPopular();
+    }catch(e){
+      console.error("question save failed", e);
+      const msg = e?.message ? `저장 실패: ${e.message}` : "저장에 실패했어요";
+      showToast(msg.length > 70 ? "저장에 실패했어요. 콘솔 오류를 확인해주세요" : msg);
+    }finally{
+      btn.disabled = false;
+      btn.textContent = oldText;
     }
-    await saveEntries();
-    closeModal();
-    renderCatPills();
-    renderList();
   });
 
   function render(){ renderCatPills(); renderList(); renderQuickPopular(); }
