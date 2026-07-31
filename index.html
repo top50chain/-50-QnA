@@ -1566,6 +1566,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   const STORAGE_KEY = "oddum50_faq_entries_v3";
@@ -1700,147 +1701,182 @@
     ];
   }
 
-  // 브라우저에서 window.storage가 제공되지 않아도 동작하도록 localStorage를 사용합니다.
-  const storageApi = (()=>{
-    if(window.storage && typeof window.storage.get === "function" && typeof window.storage.set === "function") {
-      return window.storage;
+  // ---------- Supabase 연결 ----------
+  const SUPABASE_URL = "https://cfimgijtocyyxofbmfdr.supabase.co";
+  // 아래 문자열을 Supabase의 전체 Publishable key로 교체하세요.
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_WVUPAR2hxthIxgx9uUfOdg_iC09lizM";
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  // 검색 기록과 카테고리 UI 설정만 이 브라우저에 저장합니다.
+  // 질문·답변·공지·복사 횟수·휴지통은 Supabase qna 테이블에 저장됩니다.
+  const storageApi = {
+    async get(key){
+      const value = localStorage.getItem(key);
+      return value === null ? null : { value };
+    },
+    async set(key, value){
+      localStorage.setItem(key, value);
+      return { value };
     }
+  };
+
+  function dbRowToEntry(row){
+    let packed = {};
+    try{ packed = row.image_url ? JSON.parse(row.image_url) : {}; }catch(e){ packed = {}; }
+    const files = Array.isArray(packed.files) ? packed.files : [];
     return {
-      async get(key){
-        const value = localStorage.getItem(key);
-        return value === null ? null : { value };
-      },
-      async set(key, value){
-        localStorage.setItem(key, value);
-        return { value };
-      }
+      id: String(row.id),
+      category: row.category || "기타",
+      question: row.title || "",
+      answer: row.answer || "",
+      isNotice: Boolean(row.is_notice),
+      copyCount: Number(row.copy_count || 0),
+      createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+      updatedAt: row.updated_at ? new Date(row.updated_at).getTime() : Date.now(),
+      deletedAt: row.deleted_at ? new Date(row.deleted_at).getTime() : null,
+      files,
+      status: packed.status || "active",
+      author: packed.author || "본사",
+      viewCount: Number(packed.viewCount || 0)
     };
-  })();
+  }
+
+  function entryToDbRow(entry, deleted=false){
+    return {
+      category: entry.category || "기타",
+      title: entry.question || "",
+      answer: entry.answer || "",
+      is_notice: Boolean(entry.isNotice),
+      copy_count: Number(entry.copyCount || 0),
+      image_url: JSON.stringify({
+        files: Array.isArray(entry.files) ? entry.files : [],
+        status: entry.status || "active",
+        author: entry.author || "본사",
+        viewCount: Number(entry.viewCount || 0)
+      }),
+      updated_at: new Date().toISOString(),
+      deleted: Boolean(deleted),
+      deleted_at: deleted ? new Date(entry.deletedAt || Date.now()).toISOString() : null
+    };
+  }
+
+  async function insertNewEntry(entry, deleted=false){
+    const payload = entryToDbRow(entry, deleted);
+    payload.created_at = new Date(entry.createdAt || Date.now()).toISOString();
+    const { data, error } = await supabaseClient.from("qna").insert(payload).select().single();
+    if(error) throw error;
+    entry.id = String(data.id);
+    return entry;
+  }
+
+  async function upsertExistingEntry(entry, deleted=false){
+    const numericId = Number(entry.id);
+    if(!Number.isInteger(numericId)) return insertNewEntry(entry, deleted);
+    const payload = { id:numericId, ...entryToDbRow(entry, deleted) };
+    payload.created_at = new Date(entry.createdAt || Date.now()).toISOString();
+    const { error } = await supabaseClient.from("qna").upsert(payload, { onConflict:"id" });
+    if(error) throw error;
+    return entry;
+  }
 
   async function loadEntries(){
-    try{
-      const res = await storageApi.get(STORAGE_KEY, true);
-      entries = (res && res.value) ? JSON.parse(res.value) : null;
-      if(!entries){ entries = seedData(); await saveEntries(); }
-    }catch(e){
-      entries = seedData();
-      try{ await saveEntries(); }catch(e2){}
+    if(SUPABASE_PUBLISHABLE_KEY.includes("PASTE_FULL")){
+      entries = [];
+      trashEntries = [];
+      showToast("Publishable key를 먼저 입력해주세요");
+    } else {
+      try{
+        const cutoff = new Date(Date.now() - TRASH_TTL).toISOString();
+        await supabaseClient.from("qna").delete().eq("deleted", true).lt("deleted_at", cutoff);
+
+        const { data, error } = await supabaseClient
+          .from("qna")
+          .select("*")
+          .order("created_at", { ascending:false });
+        if(error) throw error;
+
+        const all = (data || []).map(dbRowToEntry);
+        entries = all.filter(item=>!item.deletedAt);
+        trashEntries = all.filter(item=>Boolean(item.deletedAt));
+
+        // 새 테이블이 비어 있으면 기존 예시 질문을 한 번만 등록합니다.
+        if(all.length === 0){
+          entries = seedData();
+          await saveEntries();
+        }
+      }catch(e){
+        console.error("Supabase load failed", e);
+        entries = [];
+        trashEntries = [];
+        showToast("Supabase 연결을 확인해주세요");
+      }
     }
+
     try{
-      const cs = await storageApi.get(CATS_KEY, true);
+      const cs = await storageApi.get(CATS_KEY);
       CATS = (cs && cs.value) ? JSON.parse(cs.value) : null;
       if(!CATS || !CATS.length){ CATS = DEFAULT_CATS.slice(); await saveCategories(); }
-    }catch(e){
-      CATS = DEFAULT_CATS.slice();
-      try{ await saveCategories(); }catch(e2){}
-    }
+    }catch(e){ CATS = DEFAULT_CATS.slice(); }
     try{
-      const ds = await storageApi.get(CAT_DESC_KEY, true);
+      const ds = await storageApi.get(CAT_DESC_KEY);
       CAT_DESC = (ds && ds.value) ? JSON.parse(ds.value) : {};
     }catch(e){ CAT_DESC = {}; }
     try{
-      const ts = await storageApi.get(TRASH_KEY, true);
-      trashEntries = (ts && ts.value) ? JSON.parse(ts.value) : [];
-      if(!Array.isArray(trashEntries)) trashEntries = [];
-      if(purgeExpiredTrash()) await saveTrash();
-    }catch(e){ trashEntries = []; }
-    updateTrashCount();
-    try{
-      const rs = await storageApi.get(RECENT_KEY, false);
+      const rs = await storageApi.get(RECENT_KEY);
       recentSearches = (rs && rs.value) ? JSON.parse(rs.value) : [];
     }catch(e){ recentSearches = []; }
+
+    updateTrashCount();
     render();
     renderQuickPopular();
   }
+
   async function saveEntries(){
-    try{ await storageApi.set(STORAGE_KEY, JSON.stringify(entries), true); return true; }
-    catch(e){ console.error("entries save failed", e); return false; }
+    try{
+      for(const entry of entries) await upsertExistingEntry(entry, false);
+      return true;
+    }catch(e){
+      console.error("entries save failed", e);
+      showToast("저장에 실패했어요");
+      return false;
+    }
   }
+
   async function saveTrash(){
-    try{ await storageApi.set(TRASH_KEY, JSON.stringify(trashEntries), true); return true; }
-    catch(e){ console.error("trash save failed", e); return false; }
+    try{
+      for(const entry of trashEntries) await upsertExistingEntry(entry, true);
+      return true;
+    }catch(e){
+      console.error("trash save failed", e);
+      showToast("휴지통 저장에 실패했어요");
+      return false;
+    }
   }
+
   function purgeExpiredTrash(){
     const now = Date.now();
-    const before = trashEntries.length;
+    const expired = trashEntries.filter(item=> now - Number(item.deletedAt || 0) >= TRASH_TTL);
     trashEntries = trashEntries.filter(item=> now - Number(item.deletedAt || 0) < TRASH_TTL);
-    return before !== trashEntries.length;
+    if(expired.length && !SUPABASE_PUBLISHABLE_KEY.includes("PASTE_FULL")){
+      const ids = expired.map(x=>Number(x.id)).filter(Number.isInteger);
+      if(ids.length) supabaseClient.from("qna").delete().in("id", ids).then(({error})=>{ if(error) console.error(error); });
+    }
+    return expired.length > 0;
   }
+
   function updateTrashCount(){
     const countEl = $("trashCount");
     if(countEl) countEl.textContent = String(trashEntries.length);
   }
+
   async function saveCategories(){
-    try{ await storageApi.set(CATS_KEY, JSON.stringify(CATS), true); return true; }
+    try{ await storageApi.set(CATS_KEY, JSON.stringify(CATS)); return true; }
     catch(e){ console.error("categories save failed", e); return false; }
   }
   async function saveCatDesc(){
-    try{ await storageApi.set(CAT_DESC_KEY, JSON.stringify(CAT_DESC), true); return true; }
+    try{ await storageApi.set(CAT_DESC_KEY, JSON.stringify(CAT_DESC)); return true; }
     catch(e){ console.error("category descriptions save failed", e); return false; }
   }
-  async function saveRecent(){
-    try{ await storageApi.set(RECENT_KEY, JSON.stringify(recentSearches), false); }
-    catch(e){}
-  }
-
-  function topEntries(n){
-    return entries.slice().sort((a,b)=>(b.viewCount||0)-(a.viewCount||0)).slice(0,n);
-  }
-
-  // ---------- quick popular ticker (single line, Naver-style slide) ----------
-  let tickerList = [];
-  let tickerIndex = 0;
-  let tickerTimer = null;
-
-  function renderQuickPopular(){
-    tickerList = topEntries(5);
-    const wrap = $("quickPopular");
-    if(!tickerList.length){
-      wrap.classList.add("hidden");
-      if(tickerTimer){ clearInterval(tickerTimer); tickerTimer = null; }
-      return;
-    }
-    wrap.classList.remove("hidden");
-    tickerIndex = Math.min(tickerIndex, tickerList.length-1);
-    const viewport = $("qpViewport");
-    viewport.innerHTML = "";
-    viewport.appendChild(makeTickerItem(tickerIndex));
-    if(tickerTimer) clearInterval(tickerTimer);
-    if(tickerList.length > 1){
-      tickerTimer = setInterval(tickerAdvance, 2400);
-    }
-  }
-
-  function makeTickerItem(idx){
-    const e = tickerList[idx];
-    const el = document.createElement("div");
-    el.className = "qp-item";
-    el.innerHTML = `<span class="qp-rank">${idx+1}</span><span class="qp-text">${escapeHtml(e.question)}</span>`;
-    return el;
-  }
-
-  function tickerAdvance(){
-    if(!tickerList.length || tickerList.length < 2) return;
-    if(document.activeElement === $("searchInput")) return; // 검색 중에는 멈춤
-    const viewport = $("qpViewport");
-    const old = viewport.querySelector(".qp-item");
-    if(old) old.classList.add("out");
-
-    tickerIndex = (tickerIndex+1) % tickerList.length;
-    setTimeout(()=>{
-      viewport.innerHTML = "";
-      const el = makeTickerItem(tickerIndex);
-      el.classList.add("in-start");
-      viewport.appendChild(el);
-      requestAnimationFrame(()=>{
-        requestAnimationFrame(()=> el.classList.remove("in-start"));
-      });
-    }, 340);
-  }
-
-  $("quickPopular").addEventListener("click", ()=>{
-    $("searchInput").focus();
-  });
 
   // ---------- categories ----------
   function renderCatPills(){
