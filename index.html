@@ -1789,9 +1789,26 @@
 
   async function insertNewEntry(entry, deleted=false){
     const payload = entryToDbRow(entry, deleted);
+
+    // qna.id는 Supabase가 자동 생성하는 GENERATED ALWAYS identity 컬럼입니다.
+    // 신규 등록 요청에는 어떤 경우에도 id를 보내지 않습니다.
+    delete payload.id;
     payload.created_at = new Date(entry.createdAt || Date.now()).toISOString();
-    const { data, error } = await supabaseClient.from("qna").insert(payload).select().single();
-    if(error) throw error;
+
+    const { data, error } = await supabaseClient
+      .from("qna")
+      .insert([payload])
+      .select("id")
+      .single();
+
+    if(error){
+      console.error("Supabase INSERT error", error, payload);
+      throw error;
+    }
+    if(!data || data.id === undefined || data.id === null){
+      throw new Error("저장은 완료됐지만 생성된 글 번호를 받지 못했습니다.");
+    }
+
     entry.id = String(data.id);
     return entry;
   }
@@ -2456,6 +2473,7 @@
   // ---------- quick popular rolling ----------
   let quickPopularTimer = null;
   let quickPopularIndex = 0;
+  let quickPopularGeneration = 0;
 
   function topEntries(limit=5){
     return entries
@@ -2475,51 +2493,62 @@
     const viewport = $("qpViewport");
     if(!wrap || !viewport) return;
 
-    const top = topEntries(5);
+    quickPopularGeneration += 1;
+    const generation = quickPopularGeneration;
+
     if(quickPopularTimer){
       clearInterval(quickPopularTimer);
       quickPopularTimer = null;
     }
 
+    const top = topEntries(5);
     if(!top.length){
       wrap.classList.add("hidden");
-      viewport.innerHTML = "";
+      viewport.replaceChildren();
       return;
     }
 
     wrap.classList.remove("hidden");
-    quickPopularIndex = Math.min(quickPopularIndex, top.length - 1);
-    viewport.innerHTML = "";
+    quickPopularIndex = Math.max(0, Math.min(quickPopularIndex, top.length - 1));
 
-    const showItem = (index, animate=false)=>{
+    // viewport 안에는 항상 질문 항목 하나만 유지합니다.
+    const tickerItem = document.createElement("div");
+    tickerItem.className = "qp-item";
+    viewport.replaceChildren(tickerItem);
+
+    const paint = (index)=>{
       const item = top[index];
-      const next = document.createElement("div");
-      next.className = "qp-item" + (animate ? " in-start" : "");
-      next.innerHTML = `<span class="qp-rank">${index+1}</span><span class="qp-text">${escapeHtml(item.question || "제목 없음")}</span>`;
-      next.addEventListener("click", ()=> openDetail(item.id));
-
-      const olds = Array.from(viewport.querySelectorAll(".qp-item"));
-      viewport.appendChild(next);
-
-      if(animate){
-        requestAnimationFrame(()=>{
-          requestAnimationFrame(()=> next.classList.remove("in-start"));
-        });
-        olds.forEach(old=>{
-          old.classList.add("out");
-          setTimeout(()=> old.remove(), 420);
-        });
-      }else{
-        olds.forEach(old=>old.remove());
-      }
+      tickerItem.innerHTML =
+        `<span class="qp-rank">${index + 1}</span>` +
+        `<span class="qp-text">${escapeHtml(item.question || "제목 없음")}</span>`;
+      tickerItem.onclick = ()=> openDetail(item.id);
     };
 
-    showItem(quickPopularIndex, false);
+    paint(quickPopularIndex);
 
     if(top.length > 1){
       quickPopularTimer = setInterval(()=>{
-        quickPopularIndex = (quickPopularIndex + 1) % top.length;
-        showItem(quickPopularIndex, true);
+        if(generation !== quickPopularGeneration) return;
+
+        tickerItem.classList.add("out");
+
+        setTimeout(()=>{
+          if(generation !== quickPopularGeneration) return;
+
+          quickPopularIndex = (quickPopularIndex + 1) % top.length;
+          paint(quickPopularIndex);
+
+          tickerItem.classList.remove("out");
+          tickerItem.classList.add("in-start");
+
+          requestAnimationFrame(()=>{
+            requestAnimationFrame(()=>{
+              if(generation === quickPopularGeneration){
+                tickerItem.classList.remove("in-start");
+              }
+            });
+          });
+        }, 190);
       }, 2800);
     }
   }
@@ -2776,7 +2805,7 @@
         showToast("수정되었어요 ✓");
       } else {
         const created = {
-          id:uid(), category:selectedCat, question:q, answer:a, author, status,
+          category:selectedCat, question:q, answer:a, author, status,
           files:currentFiles, isNotice, createdAt:Date.now(), copyCount:0, viewCount:0
         };
         await insertNewEntry(created, false);
@@ -2790,8 +2819,9 @@
       renderQuickPopular();
     }catch(e){
       console.error("question save failed", e);
-      const msg = e?.message ? `저장 실패: ${e.message}` : "저장에 실패했어요";
-      showToast(msg.length > 70 ? "저장에 실패했어요. 콘솔 오류를 확인해주세요" : msg);
+      const detail = e?.message || e?.details || e?.hint || "";
+      const msg = detail ? `저장 실패: ${detail}` : "저장에 실패했어요";
+      showToast(msg.length > 90 ? "저장에 실패했어요. F12 Console을 확인해주세요" : msg);
     }finally{
       btn.disabled = false;
       btn.textContent = oldText;
