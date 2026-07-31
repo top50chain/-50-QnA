@@ -2437,6 +2437,76 @@
   $("trashOverlay").addEventListener("click", e=>{ if(e.target===$("trashOverlay")) closeTrashModal(); });
   $("undoDeleteBtn").addEventListener("click", ()=>{ if(lastDeletedId) restoreTrashItem(lastDeletedId, true); });
 
+  // ---------- quick popular rolling ----------
+  let quickPopularTimer = null;
+  let quickPopularIndex = 0;
+
+  function topEntries(limit=5){
+    return entries
+      .filter(item=>!item.deletedAt && !item.isNotice)
+      .slice()
+      .sort((a,b)=>{
+        const aScore = Number(a.copyCount||0) * 3 + Number(a.viewCount||0);
+        const bScore = Number(b.copyCount||0) * 3 + Number(b.viewCount||0);
+        if(bScore !== aScore) return bScore - aScore;
+        return Number(b.createdAt||0) - Number(a.createdAt||0);
+      })
+      .slice(0, limit);
+  }
+
+  function renderQuickPopular(){
+    const wrap = $("quickPopular");
+    const viewport = $("qpViewport");
+    if(!wrap || !viewport) return;
+
+    const top = topEntries(5);
+    if(quickPopularTimer){
+      clearInterval(quickPopularTimer);
+      quickPopularTimer = null;
+    }
+
+    if(!top.length){
+      wrap.classList.add("hidden");
+      viewport.innerHTML = "";
+      return;
+    }
+
+    wrap.classList.remove("hidden");
+    quickPopularIndex = Math.min(quickPopularIndex, top.length - 1);
+
+    const showItem = (index, animate=false)=>{
+      const item = top[index];
+      const next = document.createElement("div");
+      next.className = "qp-item" + (animate ? " in-start" : "");
+      next.innerHTML = `<span class="qp-rank">${index+1}</span><span class="qp-text">${escapeHtml(item.question || "제목 없음")}</span>`;
+      next.addEventListener("click", ()=> openDetail(item.id));
+
+      const old = viewport.querySelector(".qp-item");
+      viewport.appendChild(next);
+
+      if(animate){
+        requestAnimationFrame(()=>{
+          requestAnimationFrame(()=> next.classList.remove("in-start"));
+        });
+        if(old){
+          old.classList.add("out");
+          setTimeout(()=> old.remove(), 420);
+        }
+      }else if(old){
+        old.remove();
+      }
+    };
+
+    showItem(quickPopularIndex, false);
+
+    if(top.length > 1){
+      quickPopularTimer = setInterval(()=>{
+        quickPopularIndex = (quickPopularIndex + 1) % top.length;
+        showItem(quickPopularIndex, true);
+      }, 2800);
+    }
+  }
+
   // ---------- search & dropdown ----------
   const searchInput = $("searchInput");
   const dropdown = $("dropdown");
