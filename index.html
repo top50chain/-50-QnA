@@ -1408,6 +1408,11 @@
   vertical-align:middle;
 }
 
+
+  /* v25: rolling ticker overlap safeguard */
+  .qp-viewport .qp-item{ position:absolute; left:0; right:0; top:0; }
+  .qp-viewport .qp-item:not(:last-child){ pointer-events:none; }
+
 </style>
 </head>
 <body>
@@ -1794,10 +1799,22 @@
   async function upsertExistingEntry(entry, deleted=false){
     const numericId = Number(entry.id);
     if(!Number.isInteger(numericId)) return insertNewEntry(entry, deleted);
-    const payload = { id:numericId, ...entryToDbRow(entry, deleted) };
-    payload.created_at = new Date(entry.createdAt || Date.now()).toISOString();
-    const { error } = await supabaseClient.from("qna").upsert(payload, { onConflict:"id" });
+
+    // qna.id는 GENERATED ALWAYS identity 컬럼이므로 id를 payload에 넣어 upsert하면 400 오류가 납니다.
+    // 기존 글은 id 조건으로 UPDATE만 하고, 실제 행이 없을 때만 새 INSERT를 수행합니다.
+    const payload = entryToDbRow(entry, deleted);
+    const { data, error } = await supabaseClient
+      .from("qna")
+      .update(payload)
+      .eq("id", numericId)
+      .select("id");
     if(error) throw error;
+
+    if(!data || data.length === 0){
+      const oldId = entry.id;
+      await insertNewEntry(entry, deleted);
+      console.warn("DB에 기존 id가 없어 새 행으로 저장했습니다.", oldId, "→", entry.id);
+    }
     return entry;
   }
 
@@ -1850,7 +1867,6 @@
 
     updateTrashCount();
     render();
-    renderQuickPopular();
   }
 
   async function saveEntries(){
@@ -2473,6 +2489,7 @@
 
     wrap.classList.remove("hidden");
     quickPopularIndex = Math.min(quickPopularIndex, top.length - 1);
+    viewport.innerHTML = "";
 
     const showItem = (index, animate=false)=>{
       const item = top[index];
@@ -2481,19 +2498,19 @@
       next.innerHTML = `<span class="qp-rank">${index+1}</span><span class="qp-text">${escapeHtml(item.question || "제목 없음")}</span>`;
       next.addEventListener("click", ()=> openDetail(item.id));
 
-      const old = viewport.querySelector(".qp-item");
+      const olds = Array.from(viewport.querySelectorAll(".qp-item"));
       viewport.appendChild(next);
 
       if(animate){
         requestAnimationFrame(()=>{
           requestAnimationFrame(()=> next.classList.remove("in-start"));
         });
-        if(old){
+        olds.forEach(old=>{
           old.classList.add("out");
           setTimeout(()=> old.remove(), 420);
-        }
-      }else if(old){
-        old.remove();
+        });
+      }else{
+        olds.forEach(old=>old.remove());
       }
     };
 
