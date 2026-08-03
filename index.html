@@ -4963,7 +4963,7 @@
     background-size:90% 30px !important;
     background-position:center top !important;
     background-repeat:repeat-y !important;
-    padding:8px 10% 4px !important;
+    padding:8px 3% 4px !important;
   }
 </style>
 </head>
@@ -7093,18 +7093,25 @@ contenteditable="true">블로그</span><button type="button" class="store-info-c
             <span class="open-manager">담당 <b contenteditable="true">김호성</b></span>
           </div>
           <div class="open-card-body open-spaced-checks">
-            <div class="open-inline-row open-payment-check-row">
-              ${openCheckItem("가맹비 입금(330만 원)")}
-              <span class="open-inline-divider" contenteditable="false"></span>
-              ${openCheckItem("홍보비 입금(770만 원)")}
-              <span class="open-inline-divider" contenteditable="false"></span>
-              <div class="open-date-check-item open-interior-date-item">
-                <span class="open-date-label" contenteditable="true">인테리어 마감예정일</span>
-                ${openDateInput("날짜 선택")}
-              </div>
-            </div>
-          </div>
-        </div>
+           <div class="open-inline-row open-payment-check-row">
+  ${openCheckItem("가맹비 입금(330만 원)")}
+  <span class="open-inline-divider" contenteditable="false"></span>
+
+  ${openCheckItem("홍보비 입금(770만 원)")}
+  <span class="open-inline-divider" contenteditable="false"></span>
+
+  <div class="open-date-check-item">
+    <span class="open-date-label" contenteditable="true">홍보비 입금예정일</span>
+    ${openDateInput("날짜 선택")}
+  </div>
+
+  <span class="open-inline-divider" contenteditable="false"></span>
+
+  <div class="open-date-check-item open-interior-date-item">
+    <span class="open-date-label" contenteditable="true">인테리어 마감예정일</span>
+    ${openDateInput("날짜 선택")}
+  </div>
+</div>
 
         <div class="open-card open-ad-plan-card">
           <div class="open-card-head">
