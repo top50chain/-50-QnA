@@ -8254,11 +8254,13 @@
   const RECENT_KEY = "oddum50_recent_searches";
   const CATS_KEY = "oddum50_categories_v1";
   const CAT_DESC_KEY = "oddum50_cat_desc_v1";
+  const CATEGORY_CONFIG = "__CATEGORY_CONFIG__";
   const TRASH_KEY = "oddum50_trash_v1";
   const TRASH_TTL = 3 * 24 * 60 * 60 * 1000;
   const DEFAULT_CATS = ["매장문의","고객문의","행사","교육","시스템","오픈정보","기타"];
   let CATS = DEFAULT_CATS.slice();
   let CAT_DESC = {};
+  let categoryConfigRow = null;
   const POPULAR_TAGS = ["환불","오유파인","지원금","렌즈","행사"];
 
   let entries = [];
@@ -8908,20 +8910,9 @@
     if(error) throw error;
 
     if(!data || data.length === 0){
-      // strict 모드(예: 게시글 삭제)에서는 실제 DB 행이 갱신됐는지 반드시 확인해야 합니다.
-      // 여기서 새 행을 만들어버리면, 원본 행이 (권한 문제 등으로) 그대로 남아있는데도
-      // 화면에서는 삭제가 성공한 것처럼 보이고, 새로고침하면 삭제 전 글이 다시 나타나는
-      // "삭제했는데 되살아나는" 현상이 발생합니다. 이런 경우 조용히 새 행을 만드는 대신
-      // 명확한 오류를 발생시켜 삭제 실패를 화면에 알립니다.
-      if(strict){
-        throw new Error(
-          "DB에서 해당 게시글(id=" + entry.id + ")을 찾지 못해 갱신하지 못했습니다. " +
-          "Supabase의 qna 테이블에 UPDATE 권한(RLS 정책)이 있는지 확인해주세요."
-        );
-      }
-      const oldId = entry.id;
-      await insertNewEntry(entry, deleted);
-      console.warn("DB에 기존 id가 없어 새 행으로 저장했습니다.", oldId, "→", entry.id);
+      // UPDATE가 0건이면 권한 또는 삭제된 원본 행을 확인해야 합니다.
+      // 새 INSERT로 대체하면 같은 제목의 게시글이 계속 쌓일 수 있습니다.
+      throw new Error("게시글(id=" + entry.id + ") 갱신 실패: 원본 행 또는 UPDATE 권한을 확인해주세요.");
     }
     return entry;
   }
@@ -8960,9 +8951,10 @@
           }
         }
 
+        categoryConfigRow = allRows.find(row=>row.category === CATEGORY_CONFIG) || null;
         const all = allRows
           .map(dbRowToEntry)
-          .filter(item=>item.category !== "__SYSTEM__" && !item.isSystemMarker);
+          .filter(item=>item.category !== "__SYSTEM__" && item.category !== CATEGORY_CONFIG && !item.isSystemMarker);
 
         entries = all.filter(item=>!item.deletedAt);
         trashEntries = all.filter(item=>Boolean(item.deletedAt));
@@ -8981,25 +8973,39 @@
       }
     }
 
+    // 서버 설정이 기준입니다. 아직 서버 설정이 없다면 기존 관리자의 브라우저에
+    // 저장된 사용자 정의 카테고리를 첫 방문 때 한 번 이전합니다.
     try{
       const cs = await storageApi.get(CATS_KEY);
-      CATS = (cs && cs.value) ? JSON.parse(cs.value) : null;
-      if(!CATS || !CATS.length){
-        CATS = DEFAULT_CATS.slice();
-        await saveCategories();
-      }else if(!CATS.includes("오픈정보")){
+      const ds = await storageApi.get(CAT_DESC_KEY);
+      const localCats = cs?.value ? JSON.parse(cs.value) : null;
+      const localDesc = ds?.value ? JSON.parse(ds.value) : {};
+      if(categoryConfigRow){
+        const config = JSON.parse(categoryConfigRow.answer || "{}");
+        if(!Array.isArray(config.categories) || !config.categories.length) throw new Error("잘못된 카테고리 설정");
+        CATS = config.categories;
+        CAT_DESC = config.descriptions && typeof config.descriptions === "object" ? config.descriptions : {};
+      }else{
+        CATS = Array.isArray(localCats) && localCats.length ? localCats : DEFAULT_CATS.slice();
+        CAT_DESC = localDesc && typeof localDesc === "object" ? localDesc : {};
+        const hasLocalChanges = CATS.some(c=>!DEFAULT_CATS.includes(c)) ||
+          Object.keys(CAT_DESC).length > 0 ||
+          (CATS.length === DEFAULT_CATS.length && CATS.some((c,i)=>c !== DEFAULT_CATS[i]));
+        if(hasLocalChanges) await saveCategoryConfig();
+      }
+      if(!CATS.includes("오픈정보")){
         const etcIndex = CATS.indexOf("기타");
         if(etcIndex >= 0) CATS.splice(etcIndex, 0, "오픈정보");
         else CATS.push("오픈정보");
-        await saveCategories();
+        if(categoryConfigRow) await saveCategoryConfig();
       }
+      await storageApi.set(CATS_KEY, JSON.stringify(CATS));
+      await storageApi.set(CAT_DESC_KEY, JSON.stringify(CAT_DESC));
     }catch(e){
-      CATS = DEFAULT_CATS.slice();
+      console.error("category settings load failed", e);
+      CATS = DEFAULT_CATS.slice(); CAT_DESC = {};
+      showToast("카테고리 동기화를 확인해주세요");
     }
-    try{
-      const ds = await storageApi.get(CAT_DESC_KEY);
-      CAT_DESC = (ds && ds.value) ? JSON.parse(ds.value) : {};
-    }catch(e){ CAT_DESC = {}; }
     try{
       const rs = await storageApi.get(RECENT_KEY);
       recentSearches = (rs && rs.value) ? JSON.parse(rs.value) : [];
@@ -9047,14 +9053,41 @@
     if(countEl) countEl.textContent = String(trashEntries.length);
   }
 
-  async function saveCategories(){
-    try{ await storageApi.set(CATS_KEY, JSON.stringify(CATS)); return true; }
-    catch(e){ console.error("categories save failed", e); return false; }
+  async function saveCategoryConfig(){
+    const answer = JSON.stringify({categories:CATS, descriptions:CAT_DESC});
+    try{
+      if(!categoryConfigRow){
+        const {data, error} = await supabaseClient.from("qna")
+          .select("id").eq("category", CATEGORY_CONFIG).limit(1);
+        if(error) throw error;
+        categoryConfigRow = data?.[0] || null;
+      }
+      if(categoryConfigRow){
+        const {data, error} = await supabaseClient.from("qna")
+          .update({answer, updated_at:new Date().toISOString()})
+          .eq("id", categoryConfigRow.id).select("id");
+        if(error) throw error;
+        if(!data?.length) throw new Error("카테고리 설정을 갱신할 권한이 없습니다.");
+      }else{
+        const now = new Date().toISOString();
+        const {data, error} = await supabaseClient.from("qna")
+          .insert([{category:CATEGORY_CONFIG, title:"카테고리 설정", answer,
+            is_notice:false, copy_count:0, image_url:"{}", deleted:false,
+            deleted_at:null, created_at:now, updated_at:now}]).select("id").single();
+        if(error) throw error;
+        categoryConfigRow = data;
+      }
+      await storageApi.set(CATS_KEY, JSON.stringify(CATS));
+      await storageApi.set(CAT_DESC_KEY, JSON.stringify(CAT_DESC));
+      return true;
+    }catch(e){
+      console.error("category settings save failed", e);
+      showToast("카테고리 공유 저장에 실패했어요");
+      return false;
+    }
   }
-  async function saveCatDesc(){
-    try{ await storageApi.set(CAT_DESC_KEY, JSON.stringify(CAT_DESC)); return true; }
-    catch(e){ console.error("category descriptions save failed", e); return false; }
-  }
+  async function saveCategories(){ return saveCategoryConfig(); }
+  async function saveCatDesc(){ return saveCategoryConfig(); }
 
   // ---------- categories ----------
   function setActiveCategory(nextCat){
@@ -9315,8 +9348,12 @@
     if(!name){ showToast("제목을 입력해주세요"); return; }
     if(CATS.includes(name) || name === "전체"){ showToast("이미 있는 카테고리예요"); return; }
     CATS.push(name);
-    if(desc){ CAT_DESC[name] = desc; await saveCatDesc(); }
-    await saveCategories();
+    if(desc) CAT_DESC[name] = desc;
+    if(!await saveCategories()){
+      CATS.pop();
+      delete CAT_DESC[name];
+      return;
+    }
     $("newCatName").value = "";
     $("newCatDesc").value = "";
     showToast(`'${name}' 카테고리를 추가했어요`);
@@ -9341,8 +9378,7 @@
     delete CAT_DESC[oldName];
     if(newDesc){ CAT_DESC[newName] = newDesc; } else { delete CAT_DESC[newName]; }
 
-    await saveCategories();
-    await saveCatDesc();
+    if(!await saveCategories()) return;
     if(newName !== oldName) await saveEntries();
 
     catEditingName = null;
@@ -9374,8 +9410,8 @@
       entries.forEach(e=>{ if(e.category === name) e.category = fallback; });
       await saveEntries();
     }
-    if(CAT_DESC[name] !== undefined){ delete CAT_DESC[name]; await saveCatDesc(); }
-    await saveCategories();
+    if(CAT_DESC[name] !== undefined) delete CAT_DESC[name];
+    if(!await saveCategories()) return;
     if(filterCat === name) filterCat = "전체";
     showToast(`'${name}' 카테고리를 삭제했어요`);
     renderCatPills();
@@ -9793,6 +9829,8 @@
       ? (e.category === "오픈정보" ? "오픈 완료로 표시했어요" : "종료 후 보관함으로 이동했어요")
       : "다시 진행중으로 전환했어요");
     renderList();
+    renderQuickPopular();
+    if($('dropdown')?.classList.contains('show')) renderPopularOnlyDropdown();
   });
 
   function hideUndoToast(){
@@ -10121,13 +10159,20 @@
   let quickPopularGeneration = 0;
 
   function topEntries(limit=5){
+    const seenTitles = new Set();
     return entries
-      .filter(item=>!item.deletedAt && !item.isNotice && !item.isUpdate && !item.isSystemMarker)
+      .filter(item=>!item.deletedAt && item.status !== "ended" && !item.isNotice && !item.isUpdate && !item.isSystemMarker)
       .slice()
       .sort((a,b)=>{
         const viewDiff = Number(b.viewCount||0) - Number(a.viewCount||0);
         if(viewDiff !== 0) return viewDiff;
         return Number(b.createdAt||0) - Number(a.createdAt||0);
+      })
+      .filter(item=>{
+        const title = String(item.question||"").normalize("NFKC").trim().replace(/\s+/g," ").toLocaleLowerCase();
+        if(!title || seenTitles.has(title)) return false;
+        seenTitles.add(title);
+        return true;
       })
       .slice(0, limit);
   }
