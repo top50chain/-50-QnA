@@ -7633,9 +7633,64 @@
 </style>
 
 </head>
-<body>
+<body class="auth-locked">
+
+<style>
+  body.auth-locked #app { display:none; }
+  #authGate[hidden] { display:none; }
+  #authGate { position:fixed; inset:0; z-index:20000; display:grid; place-items:center; background:#faf8f4; padding:24px; font-family:inherit; }
+  .auth-card { width:min(100%,380px); background:white; border:1px solid #ece8e1; border-radius:20px; padding:28px; box-shadow:0 16px 45px rgba(0,0,0,.08); }
+  .auth-card h1 { font-size:23px; margin:0 0 8px; }
+  .auth-card p { color:#777; font-size:14px; margin:0 0 24px; }
+  .auth-card label { display:block; font-size:13px; font-weight:700; margin:16px 0 7px; }
+  .auth-card input { width:100%; box-sizing:border-box; border:1px solid #d9d4cc; border-radius:10px; padding:13px; font-size:16px; }
+  .auth-card button { width:100%; border:0; border-radius:10px; background:#ff7a2f; color:white; padding:13px; margin-top:22px; font-size:16px; font-weight:700; cursor:pointer; }
+  .auth-card button:disabled { opacity:.6; cursor:wait; }
+  #authError { min-height:20px; color:#c83b30; font-size:13px; margin-top:12px; }
+  #qnaLogoutBtn { display:none; width:auto; margin:0 auto 8px; background:transparent; border:0; color:#777; font-size:12px; cursor:pointer; }
+  body:not(.auth-locked) #qnaLogoutBtn { display:block; }
+  #qnaManageBtn[hidden], #qnaManagePanel[hidden] { display:none; }
+  #qnaManageBtn { position:fixed; bottom:10px; left:12px; z-index:90; border:0; background:transparent; color:#999; font-size:11px; cursor:pointer; }
+  #qnaManagePanel { position:fixed; inset:0; z-index:20010; display:grid; place-items:center; background:rgba(0,0,0,.42); padding:20px; }
+  .qna-manage-card { width:min(100%,420px); max-height:85vh; overflow:auto; background:white; border-radius:18px; padding:24px; }
+  .qna-manage-head { display:flex; justify-content:space-between; align-items:center; }
+  .qna-manage-head h2 { margin:0; font-size:19px; }
+  .qna-manage-head button { background:transparent; border:0; font-size:22px; cursor:pointer; }
+  .qna-manage-card label { display:block; font-size:12px; margin:12px 0 5px; }
+  .qna-manage-card input { width:100%; box-sizing:border-box; padding:11px; border:1px solid #ddd; border-radius:9px; font-size:15px; }
+  .qna-manage-card form>button { width:100%; margin-top:14px; padding:11px; border:0; border-radius:9px; background:#ff7a2f; color:white; cursor:pointer; }
+  .qna-manage-row { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eee; padding:10px 0; }
+  .qna-manage-row button { border:0; background:#fff0ed; color:#ba4738; border-radius:8px; padding:6px 10px; cursor:pointer; }
+  #qnaManageMessage { font-size:13px; min-height:20px; color:#a83b2f; }
+</style>
+<div id="authGate" role="main">
+  <form class="auth-card" id="qnaLoginForm">
+    <h1>으뜸50 무물보</h1>
+    <p>한 번 로그인하면 이 기기에서 로그인 상태가 유지됩니다.</p>
+    <label for="qnaUsername">아이디</label>
+    <input id="qnaUsername" autocomplete="username" required>
+    <label for="qnaPassword">비밀번호</label>
+    <input id="qnaPassword" type="password" autocomplete="current-password" required>
+    <button id="qnaLoginBtn" type="submit">로그인</button>
+    <div id="authError" role="alert"></div>
+  </form>
+</div>
+<div id="qnaManagePanel" hidden>
+  <div class="qna-manage-card" role="dialog" aria-modal="true" aria-labelledby="qnaManageTitle">
+    <div class="qna-manage-head"><h2 id="qnaManageTitle">계정 관리</h2><button type="button" id="qnaManageClose" aria-label="닫기">×</button></div>
+    <form id="qnaManageCreateForm">
+      <label for="qnaNewUsername">새 아이디</label><input id="qnaNewUsername" required maxlength="40" autocomplete="off">
+      <label for="qnaNewPassword">새 비밀번호</label><input id="qnaNewPassword" type="password" required autocomplete="new-password">
+      <button type="submit">계정 등록</button>
+    </form>
+    <p id="qnaManageMessage" role="status"></p>
+    <div id="qnaManageList"></div>
+  </div>
+</div>
 
 <div class="app" id="app">
+  <button id="qnaLogoutBtn" type="button">로그아웃</button>
+  <button id="qnaManageBtn" type="button" hidden>계정 관리</button>
 
   <div class="header">
     <div class="brand">
@@ -7714,6 +7769,7 @@
     <div class="detail-actions detail-menu-wrap">
       <button class="detail-more-btn" id="detailMoreBtn" type="button" aria-label="게시글 관리 메뉴" aria-expanded="false">•••</button>
       <div class="detail-menu" id="detailMenu">
+        <button type="button" id="detailLinkCopyBtn">링크 복사</button>
         <button type="button" id="detailEditBtn">수정</button>
         <button type="button" id="detailStatusBtn">종료(보관함)</button>
         <button type="button" id="detailTextSelectBtn">텍스트 선택 모드</button>
@@ -8040,7 +8096,7 @@
       <span>임시저장한 글</span>
       <button type="button" id="draftOverlayClose">✕</button>
     </div>
-    <div class="draft-storage-guide">임시저장 글은 14일 후 자동 삭제되며, 최대 10개까지 저장됩니다.</div>
+    <div class="draft-storage-guide">임시저장 글은 모든 컴퓨터에서 공유되며, 14일 후 자동 삭제됩니다. 최대 10개까지 저장됩니다.</div>
     <div class="draft-list" id="draftList"></div>
   </div>
 </div>
@@ -8251,6 +8307,7 @@
 (function(){
   const STORAGE_KEY = "oddum50_faq_entries_v3";
   const DRAFT_KEY = "oddum50_question_drafts_v2";
+  const DRAFT_TABLE = "qna_drafts";
   const RECENT_KEY = "oddum50_recent_searches";
   const CATS_KEY = "oddum50_categories_v1";
   const CAT_DESC_KEY = "oddum50_cat_desc_v1";
@@ -8261,6 +8318,8 @@
   let CATS = DEFAULT_CATS.slice();
   let CAT_DESC = {};
   let categoryConfigRow = null;
+  let sharedDrafts = [];
+  let draftsSynced = false;
   const POPULAR_TAGS = ["환불","오유파인","지원금","렌즈","행사"];
 
   let entries = [];
@@ -8812,6 +8871,148 @@
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_WVUPAR2hxthIxgx9uUfOdg_iC09lizM";
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+  // 로그인 식별자는 서버에서 찾습니다. 비밀번호는 HTML에 저장하지 않습니다.
+  let authReady = false;
+  let authChecking = false;
+  function lockQna(message=""){
+    authReady = false;
+    entries = [];
+    trashEntries = [];
+    currentDetailId = null;
+    $("detailPage")?.classList.remove("show");
+    $("detailBackdrop")?.classList.remove("show");
+    document.body.classList.remove("detail-open");
+    document.body.style.overflow = "";
+    document.body.classList.add("auth-locked");
+    $("qnaManageBtn").hidden = true;
+    $("qnaManagePanel").hidden = true;
+    $("authGate").hidden = false;
+    $("authError").textContent = message;
+  }
+  async function checkQnaAccess(){
+    if(authChecking) return;
+    authChecking = true;
+    try{
+      const {data:{user},error:userError} = await supabaseClient.auth.getUser();
+      if(userError || !user){ lockQna(); return; }
+      const {data:member,error:memberError} = await supabaseClient
+        .from("qna_members").select("active,is_admin").eq("user_id",user.id).maybeSingle();
+      if(memberError) throw memberError;
+      if(!member?.active){
+        lockQna("사용할 수 없는 계정입니다.");
+        await supabaseClient.auth.signOut();
+        return;
+      }
+      if(!authReady){
+        authReady = true;
+        $("authGate").hidden = true;
+        $("authError").textContent = "";
+        document.body.classList.remove("auth-locked");
+        await loadEntries();
+      }
+      $("qnaManageBtn").hidden = !member.is_admin;
+    }catch(error){
+      console.error("Q&A 계정 확인 실패",error);
+      lockQna("연결을 확인한 뒤 다시 로그인해 주세요.");
+    }finally{ authChecking = false; }
+  }
+  $("qnaLoginForm").addEventListener("submit",async event=>{
+    event.preventDefault();
+    const username = $("qnaUsername").value.trim();
+    const password = $("qnaPassword").value;
+    const btn = $("qnaLoginBtn");
+    $("authError").textContent = "";
+    if(!username){ $("authError").textContent = "아이디를 입력해 주세요."; return; }
+    btn.disabled = true;
+    try{
+      const {data:email,error:lookupError} = await supabaseClient.rpc("qna_login_email",{p_username:username});
+      if(lookupError || !email) throw lookupError || new Error("계정 없음");
+      const {error} = await supabaseClient.auth.signInWithPassword({email,password});
+      $("qnaPassword").value = "";
+      if(error) throw error;
+      await checkQnaAccess();
+    }catch(error){
+      console.error("Q&A 로그인 실패",error);
+      $("authError").textContent = "아이디 또는 비밀번호를 확인해 주세요.";
+    }finally{ btn.disabled = false; }
+  });
+  $("qnaLogoutBtn").addEventListener("click",async()=>{
+    lockQna();
+    await supabaseClient.auth.signOut();
+  });
+  async function manageQnaAccounts(action, payload={}){
+    const {data,error} = await supabaseClient.functions.invoke("qna-accounts",{
+      body:{action,...payload}
+    });
+    if(error || data?.error) throw error || new Error(data.error);
+    return data;
+  }
+  async function renderQnaAccounts(){
+    const list = $("qnaManageList");
+    list.textContent = "불러오는 중...";
+    try{
+      const data = await manageQnaAccounts("list");
+      list.replaceChildren();
+      for(const member of data.members || []){
+        const row = document.createElement("div");
+        row.className = "qna-manage-row";
+        const name = document.createElement("span");
+        name.textContent = member.username + (member.is_admin ? " · 관리자" : "");
+        row.appendChild(name);
+        if(!member.is_admin){
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.textContent = "삭제";
+          remove.addEventListener("click",async()=>{
+            if(!confirm(`${member.username} 계정을 삭제할까요? 이미 로그인한 기기도 사용이 중단됩니다.`)) return;
+            remove.disabled = true;
+            try{
+              await manageQnaAccounts("delete",{user_id:member.user_id});
+              $("qnaManageMessage").textContent = "계정을 삭제했어요.";
+              await renderQnaAccounts();
+            }catch(error){
+              $("qnaManageMessage").textContent = "삭제에 실패했어요. 다시 확인해 주세요.";
+              remove.disabled = false;
+            }
+          });
+          row.appendChild(remove);
+        }
+        list.appendChild(row);
+      }
+    }catch(error){
+      list.textContent = "계정 목록을 불러오지 못했어요.";
+    }
+  }
+  $("qnaManageBtn").addEventListener("click",()=>{
+    $("qnaManagePanel").hidden = false;
+    $("qnaManageMessage").textContent = "";
+    renderQnaAccounts();
+  });
+  $("qnaManageClose").addEventListener("click",()=>$("qnaManagePanel").hidden=true);
+  $("qnaManagePanel").addEventListener("click",event=>{
+    if(event.target === $("qnaManagePanel")) $("qnaManagePanel").hidden=true;
+  });
+  $("qnaManageCreateForm").addEventListener("submit",async event=>{
+    event.preventDefault();
+    const username = $("qnaNewUsername").value.trim();
+    const password = $("qnaNewPassword").value;
+    const button = event.currentTarget.querySelector("button[type=submit]");
+    button.disabled = true;
+    try{
+      await manageQnaAccounts("create",{username,password});
+      $("qnaNewUsername").value = "";
+      $("qnaNewPassword").value = "";
+      $("qnaManageMessage").textContent = "계정을 등록했어요.";
+      await renderQnaAccounts();
+    }catch(error){
+      $("qnaManageMessage").textContent = "등록에 실패했어요. 이름 중복 또는 비밀번호 기준을 확인해 주세요.";
+    }finally{ button.disabled = false; }
+  });
+  document.addEventListener("visibilitychange",()=>{
+    if(!document.hidden) checkQnaAccess();
+  });
+  setInterval(checkQnaAccess,10000);
+
   // 검색 기록과 카테고리 UI 설정만 이 브라우저에 저장합니다.
   // 질문·답변·공지·복사 횟수·휴지통은 Supabase qna 테이블에 저장됩니다.
   const storageApi = {
@@ -9011,8 +9212,14 @@
       recentSearches = (rs && rs.value) ? JSON.parse(rs.value) : [];
     }catch(e){ recentSearches = []; }
 
+    await loadSharedDrafts();
     updateTrashCount();
     render();
+    const linkedPostId = new URLSearchParams(window.location.search).get("post");
+    if(linkedPostId){
+      if(entries.some(e=>String(e.id)===linkedPostId)) openDetail(linkedPostId, {fromHistory:true});
+      else showToast("공유된 게시글을 찾을 수 없어요");
+    }
   }
 
   async function saveEntries(){
@@ -9422,6 +9629,8 @@
   // ---------- list ----------
   function matchesFilter(e){
     if(e.isSystemMarker) return false;
+    // 완료된 오픈정보는 전체·다른 카테고리 목록에서 숨기고 오픈정보에서만 보여줍니다.
+    if(e.category === "오픈정보" && e.status === "ended" && filterCat !== "오픈정보") return false;
     if(filterCat !== "전체" && !e.isNotice && !e.isUpdate && e.category !== filterCat) return false;
     if(searchQuery){
       const hay = (e.category+" "+e.question+" "+e.answer).toLowerCase();
@@ -9445,6 +9654,11 @@
 
   function renderList(){
     const sortEntries = (items)=>items.sort((a,b)=>{
+      if(filterCat === "오픈정보"){
+        const completionDiff = Number(a.category === "오픈정보" && a.status === "ended") -
+          Number(b.category === "오픈정보" && b.status === "ended");
+        if(completionDiff) return completionDiff;
+      }
       const updateDiff = Number(Boolean(b.isUpdate)) - Number(Boolean(a.isUpdate));
       if(updateDiff) return updateDiff;
       const noticeDiff = Number(Boolean(b.isNotice)) - Number(Boolean(a.isNotice));
@@ -9565,9 +9779,27 @@
   // ---------- detail page ----------
 
 
-  function openDetail(id){
+  function postLink(id){
+    const url = new URL(window.location.href);
+    url.searchParams.set("post", String(id));
+    url.hash = "";
+    return url.toString();
+  }
+
+  function clearPostLink(){
+    const url = new URL(window.location.href);
+    if(!url.searchParams.has("post")) return;
+    url.searchParams.delete("post");
+    history.replaceState(null, "", url);
+  }
+
+  function openDetail(id, options={}){
     const e = entries.find(x=>String(x.id)===String(id));
     if(!e) return;
+    if(String(currentDetailId)===String(id) && $("detailPage").classList.contains("show")) return;
+    if(!options.fromHistory && new URLSearchParams(window.location.search).get("post") !== String(id)){
+      history.pushState({post:String(id)}, "", postLink(id));
+    }
     currentDetailId = id;
     e.viewCount = (e.viewCount||0)+1;
     saveEntries();
@@ -9679,7 +9911,7 @@
     renderList();
     renderQuickPopular();
   }
-  function closeDetail(){
+  function closeDetail(options={}){
     $("detailScroll")?.querySelectorAll(".store-info-toggle").forEach(toggle=>{
       toggle.classList.remove("is-open");
     });
@@ -9689,6 +9921,7 @@
     document.body.style.overflow = "";
     closeDetailMenu();
     currentDetailId = null;
+    if(!options.fromHistory) clearPostLink();
     renderCatPills();
     renderList();
     renderQuickPopular();
@@ -9718,6 +9951,20 @@
   });
   $("detailMenu").addEventListener("click", event=>event.stopPropagation());
   document.addEventListener("click", closeDetailMenu);
+
+  $("detailLinkCopyBtn").addEventListener("click", async ()=>{
+    const id = currentDetailId;
+    closeDetailMenu();
+    if(id === null || id === undefined) return;
+    const copied = await copyTextSafely(postLink(id));
+    showToast(copied ? "게시글 링크를 복사했어요 ✓" : "링크 복사에 실패했어요");
+  });
+
+  window.addEventListener("popstate", ()=>{
+    const id = new URLSearchParams(window.location.search).get("post");
+    if(id && entries.some(e=>String(e.id)===id)) openDetail(id, {fromHistory:true});
+    else if($("detailPage").classList.contains("show")) closeDetail({fromHistory:true});
+  });
 
   $("backBtn").addEventListener("click", closeDetail);
   $("detailBackdrop").addEventListener("click", closeDetail);
@@ -9858,8 +10105,8 @@
       await upsertExistingEntry(restored, false);
       trashEntries.splice(idx,1);
       entries.push(restored);
-      updateTrashCount();
-      render();
+    updateTrashCount();
+    render();
       renderTrashList();
       if(fromUndo) hideUndoToast();
       showToast("복원했어요 ✓");
@@ -11277,7 +11524,7 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
   const DRAFT_MAX_COUNT = 10;
   const DRAFT_EXPIRE_MS = 14 * 24 * 60 * 60 * 1000;
 
-  function getDrafts(){
+  function readLocalDrafts(){
     try{
       const parsed = JSON.parse(localStorage.getItem(DRAFT_KEY) || "[]");
       const source = Array.isArray(parsed) ? parsed : [];
@@ -11301,13 +11548,91 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
     }
   }
 
-  function setDrafts(list){
+  function getDrafts(){
+    return draftsSynced ? sharedDrafts.slice() : readLocalDrafts();
+  }
+
+  async function loadSharedDrafts(){
+    try{
+      const cutoffTime = new Date(Date.now()-DRAFT_EXPIRE_MS).toISOString();
+      const {error:cleanupError} = await supabaseClient.from(DRAFT_TABLE)
+        .delete().lt("saved_at",cutoffTime);
+      if(cleanupError) throw cleanupError;
+      const {data, error} = await supabaseClient.from(DRAFT_TABLE)
+        .select("draft_id,data,saved_at").order("saved_at", {ascending:false}).limit(100);
+      if(error) throw error;
+      const cutoff = Date.now() - DRAFT_EXPIRE_MS;
+      const byId = new Map((data || [])
+        .filter(row=>new Date(row.saved_at).getTime() >= cutoff)
+        .map(row=>[String(row.draft_id), {...row.data, id:String(row.draft_id), savedAt:new Date(row.saved_at).getTime()}]));
+
+      // 기존 컴퓨터의 임시저장 글은 서버에 성공적으로 옮긴 뒤에만 로컬에서 지웁니다.
+      const local = readLocalDrafts();
+      for(const draft of local){
+        if(byId.has(String(draft.id))) continue;
+        const {error:migrateError} = await supabaseClient.from(DRAFT_TABLE).upsert({
+          draft_id:String(draft.id), data:draft,
+          saved_at:new Date(Number(draft.savedAt) || Date.now()).toISOString()
+        }, {onConflict:"draft_id"});
+        if(migrateError) throw migrateError;
+        byId.set(String(draft.id), draft);
+      }
+      if(local.length) localStorage.removeItem(DRAFT_KEY);
+      const sorted = [...byId.values()]
+        .sort((a,b)=>Number(b.savedAt||0)-Number(a.savedAt||0));
+      const overflowIds = sorted.slice(DRAFT_MAX_COUNT).map(d=>String(d.id));
+      if(overflowIds.length){
+        const {error:overflowError} = await supabaseClient.from(DRAFT_TABLE)
+          .delete().in("draft_id",overflowIds);
+        if(overflowError) throw overflowError;
+      }
+      sharedDrafts = sorted.slice(0,DRAFT_MAX_COUNT);
+      draftsSynced = true;
+      updateDraftCount();
+      if($("draftOverlay")?.classList.contains("show")) renderDraftList();
+    }catch(error){
+      console.error("공용 임시저장 불러오기 실패:", error);
+      // 서버 연결이 실패하면 기존 로컬 초안은 그대로 보존합니다.
+      draftsSynced = false;
+      updateDraftCount();
+      showToast("공용 임시저장 연결을 확인해주세요");
+    }
+  }
+
+  async function setDrafts(list){
     const safeList = (Array.isArray(list) ? list : [])
       .sort((a,b)=>Number(b.savedAt || 0) - Number(a.savedAt || 0))
       .slice(0, DRAFT_MAX_COUNT);
-
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(safeList));
-    updateDraftCount();
+    if(!draftsSynced){
+      showToast("공용 임시저장 연결 후 다시 시도해주세요");
+      return false;
+    }
+    try{
+      const nextIds = new Set(safeList.map(d=>String(d.id)));
+      const previousIds = new Set(sharedDrafts.map(d=>String(d.id)));
+      for(const draft of safeList){
+        const previous = sharedDrafts.find(d=>String(d.id)===String(draft.id));
+        if(previous && JSON.stringify(previous) === JSON.stringify(draft)) continue;
+        const {error} = await supabaseClient.from(DRAFT_TABLE).upsert({
+          draft_id:String(draft.id), data:draft,
+          saved_at:new Date(Number(draft.savedAt) || Date.now()).toISOString()
+        }, {onConflict:"draft_id"});
+        if(error) throw error;
+      }
+      const removed = [...previousIds].filter(id=>!nextIds.has(id));
+      if(removed.length){
+        const {error} = await supabaseClient.from(DRAFT_TABLE).delete().in("draft_id",removed);
+        if(error) throw error;
+      }
+      sharedDrafts = safeList;
+      updateDraftCount();
+      return true;
+    }catch(error){
+      console.error("공용 임시저장 저장 실패:", error);
+      showToast("임시저장에 실패했어요");
+      await loadSharedDrafts();
+      return false;
+    }
   }
 
   function updateDraftCount(){
@@ -11333,7 +11658,7 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
     };
   }
 
-  function saveDraft(){
+  async function saveDraft(){
     const draft = collectDraft();
     const drafts = getDrafts();
 
@@ -11357,20 +11682,20 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
       drafts.unshift(draft);
     }
 
-    setDrafts(drafts.slice(0, DRAFT_MAX_COUNT));
+    if(!await setDrafts(drafts.slice(0, DRAFT_MAX_COUNT))) return;
     forceCloseModal();
     showToast("임시저장했어요 ✓");
   }
 
-  function clearDraft(draftId){
+  async function clearDraft(draftId){
     if(!draftId) return;
-    setDrafts(getDrafts().filter(item=>String(item.id) !== String(draftId)));
+    return setDrafts(getDrafts().filter(item=>String(item.id) !== String(draftId)));
   }
 
-  function clearDraftForRegisteredPost(){
+  async function clearDraftForRegisteredPost(){
     const currentQuestion = $("qInput").value.trim();
 
-    setDrafts(getDrafts().filter(item=>{
+    return setDrafts(getDrafts().filter(item=>{
       if(editingId && String(item.editingId || "") === String(editingId)) return false;
       if(!editingId && currentQuestion && String(item.question || "").trim() === currentQuestion) return false;
       return true;
@@ -11468,24 +11793,24 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
         restoreDraft(draft);
       });
 
-      row.querySelector(".draft-item-delete")?.addEventListener("click", event=>{
+      row.querySelector(".draft-item-delete")?.addEventListener("click", async event=>{
         event.preventDefault();
         event.stopPropagation();
 
         if(!confirm("이 임시저장 글을 삭제할까요?")) return;
-        clearDraft(id);
-        renderDraftList();
+        if(await clearDraft(id)) renderDraftList();
       });
     });
   }
 
-  function openDraftOverlay(event){
+  async function openDraftOverlay(event){
     event?.preventDefault?.();
     event?.stopPropagation?.();
 
     const draftOverlay = $("draftOverlay");
     if(!draftOverlay) return;
 
+    await loadSharedDrafts();
     renderDraftList();
     draftOverlay.classList.add("show");
     draftOverlay.setAttribute("aria-hidden", "false");
@@ -13782,7 +14107,7 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
         showToast("등록되었어요 ✓");
       }
 
-      clearDraftForRegisteredPost();
+      await clearDraftForRegisteredPost();
       forceCloseModal();
 
       // Supabase에 저장된 is_notice 값을 다시 읽어 공지가 즉시 상단에 표시되도록 동기화
@@ -13873,7 +14198,7 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
     }
   });
 
-  loadEntries();
+  checkQnaAccess();
 })();
 </script>
 
