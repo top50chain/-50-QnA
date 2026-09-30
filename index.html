@@ -7254,35 +7254,11 @@
 
 
 <style>
-/* ---------- explicit mobile text-selection mode ---------- */
-.detail.text-select-mode .detail-a,
-.detail.text-select-mode .detail-a *{
-  -webkit-user-select:text !important;
-  user-select:text !important;
-  -webkit-touch-callout:default !important;
-  cursor:text !important;
-}
-@media (max-width:679px){
-  .detail.text-select-mode .detail-scroll{
-    touch-action:none !important;
-    overscroll-behavior:contain;
-  }
-  .detail.text-select-mode .detail-a,
-  .detail.text-select-mode .detail-a *{
-    touch-action:none !important;
-    pointer-events:auto !important;
-  }
-}
-
 /* ---------- explicit table cell-range selection mode ---------- */
 .rich-editor.cell-range-mode{ cursor:cell; }
 .rich-editor.cell-range-mode td,
 .rich-editor.cell-range-mode th{ cursor:cell !important; }
 #cellRangeModeBtn.is-active{
-  background:var(--orange-050);
-  color:var(--orange);
-}
-#detailTextSelectBtn.is-active{
   background:var(--orange-050);
   color:var(--orange);
 }
@@ -7798,7 +7774,6 @@
         <button type="button" id="detailLinkCopyBtn">링크 복사</button>
         <button type="button" id="detailEditBtn">수정</button>
         <button type="button" id="detailStatusBtn">종료(보관함)</button>
-        <button type="button" id="detailTextSelectBtn">텍스트 선택 모드</button>
         <button type="button" id="detailDelBtn" class="danger">삭제</button>
       </div>
     </div>
@@ -14308,32 +14283,12 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
 </script>
 
 <script>
-/* ---------- explicit selection modes: mobile text / editor cell range ---------- */
+/* ---------- editor cell range selection ---------- */
 (function(){
   const $id = id => document.getElementById(id);
-  const detailPage = $id('detailPage');
-  const detailTextSelectBtn = $id('detailTextSelectBtn');
   const answerEditor = $id('aInput');
   const cellRangeModeBtn = $id('cellRangeModeBtn');
-  if(!detailPage || !answerEditor) return;
-
-  function setDetailTextSelectMode(enabled){
-    detailPage.classList.toggle('text-select-mode', enabled);
-    detailTextSelectBtn?.classList.toggle('is-active', enabled);
-    if(detailTextSelectBtn) detailTextSelectBtn.textContent = enabled ? '텍스트 선택 모드 종료' : '텍스트 선택 모드';
-    try{ closeDetailMenu?.(); }catch(_){}
-    try{ showToast?.(enabled ? '이제 본문을 드래그해 선택할 수 있어요. 스크롤하려면 선택 모드를 종료하세요.' : '텍스트 선택 모드를 종료했어요'); }catch(_){}
-  }
-
-  detailTextSelectBtn?.addEventListener('click', function(e){
-    e.preventDefault();
-    e.stopPropagation();
-    setDetailTextSelectMode(!detailPage.classList.contains('text-select-mode'));
-  });
-
-  // 상세창을 닫거나 다시 열 때 선택 모드를 자동 해제합니다.
-  $id('backBtn')?.addEventListener('click', ()=>setDetailTextSelectMode(false), true);
-  $id('detailBackdrop')?.addEventListener('click', ()=>setDetailTextSelectMode(false), true);
+  if(!answerEditor) return;
 
   let rangeMode = false;
   let anchorCell = null;
