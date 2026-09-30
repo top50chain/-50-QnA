@@ -7628,12 +7628,21 @@
   #authError { min-height:20px; color:#c83b30; font-size:13px; margin-top:12px; }
   #qnaManageBtn[hidden], #qnaManagePanel[hidden] { display:none; }
   #qnaManageBtn { position:static; border:0; background:transparent; color:#888; font-size:12px; padding:6px 12px; cursor:pointer; }
-  .qna-account-actions { display:none; position:fixed; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%); z-index:90; align-items:center; gap:8px; padding:7px 12px; background:rgba(255,255,255,.96); border:1px solid #ececef; border-radius:24px; box-shadow:0 3px 16px rgba(0,0,0,.04); white-space:nowrap; }
-  body:not(.auth-locked) .qna-account-actions { display:flex; }
+  .qna-session-actions { display:none; position:fixed; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%); z-index:90; align-items:center; gap:8px; padding:7px 12px; background:rgba(255,255,255,.96); border:1px solid #ececef; border-radius:24px; box-shadow:0 3px 16px rgba(0,0,0,.04); white-space:nowrap; }
+  body:not(.auth-locked) .qna-session-actions { display:flex; }
   body:not(.auth-locked) #app { padding-bottom:100px; }
-  .qna-account-actions button { display:block; position:static; transform:none; width:auto; margin:0; padding:9px 12px; background:transparent; border:0; border-radius:14px; color:#777; font:inherit; font-size:12px; cursor:pointer; }
-  .qna-account-actions button:hover { background:#f6f6f7; color:#333; }
-  .qna-account-actions button:focus-visible { outline:2px solid #ff7a2f; outline-offset:2px; }
+  .qna-session-actions button { display:block; position:static; transform:none; width:auto; margin:0; padding:9px 12px; background:transparent; border:0; border-radius:14px; color:#777; font:inherit; font-size:12px; cursor:pointer; }
+  .qna-session-actions button:hover { background:#f6f6f7; color:#333; }
+  .qna-session-actions button:focus-visible { outline:2px solid #ff7a2f; outline-offset:2px; }
+  .qna-session-actions [hidden] { display:none !important; }
+  .qna-session-actions { max-width:calc(100vw - 24px); box-sizing:border-box; }
+  .qna-permission { display:flex; align-items:center; gap:8px; font-size:13px; padding:10px 0; color:#555; }
+  .qna-permission input { width:17px; height:17px; padding:0; margin:0; accent-color:#ff7a2f; }
+  #qnaPasswordPanel[hidden] { display:none; }
+  #qnaPasswordPanel { position:fixed; inset:0; z-index:20020; display:grid; place-items:center; padding:20px; background:rgba(0,0,0,.42); }
+  #qnaSelfPasswordMessage { min-height:20px; font-size:13px; color:#a83b2f; margin-top:12px; }
+  .auth-card input, .qna-manage-card input:not([type="checkbox"]) { background:#fff !important; color:#222 !important; -webkit-text-fill-color:#222; }
+  @media(max-width:420px){ .qna-session-actions { gap:3px; padding:7px 8px; } .qna-session-actions button { padding:10px 7px; font-size:12px; } .qna-manage-row { flex-wrap:wrap; gap:8px; } }
   .qna-account-divider { width:1px; height:12px; background:#ddd; }
   #qnaManagePanel { position:fixed; inset:0; z-index:20010; display:grid; place-items:center; background:rgba(0,0,0,.42); padding:20px; }
   .qna-manage-card { width:min(100%,420px); max-height:85vh; overflow:auto; background:white; border-radius:18px; padding:24px; }
@@ -7668,17 +7677,35 @@
     <button id="qnaLoginBtn" type="submit">로그인</button>
     <div id="authError" role="alert"></div>
   </form>
-  <button id="qnaManageBtn" type="button">로그인 관리</button>
+  <button id="qnaManageBtn" type="button">계정 관리</button>
   </div>
 </div>
-<nav class="qna-account-actions" aria-label="계정 메뉴">
-  <button id="qnaManageSessionBtn" type="button">로그인 관리</button>
+<nav class="qna-session-actions" aria-label="계정 메뉴">
+  <button id="qnaManageSessionBtn" type="button" hidden>계정 관리</button>
+  <span id="qnaManageDivider" class="qna-account-divider" aria-hidden="true" hidden></span>
+  <button id="qnaChangePasswordBtn" type="button">비밀번호 변경</button>
   <span class="qna-account-divider" aria-hidden="true"></span>
   <button id="qnaLogoutBtn" type="button">로그아웃</button>
 </nav>
+<div id="qnaPasswordPanel" hidden>
+  <div class="qna-manage-card" role="dialog" aria-modal="true" aria-labelledby="qnaSelfPasswordTitle">
+    <div class="qna-manage-head"><h2 id="qnaSelfPasswordTitle">비밀번호 변경</h2><button type="button" id="qnaSelfPasswordClose" aria-label="닫기">×</button></div>
+    <form id="qnaSelfPasswordForm">
+      <label for="qnaCurrentPassword">현재 비밀번호</label>
+      <input id="qnaCurrentPassword" type="password" autocomplete="current-password" required>
+      <label for="qnaSelfNewPassword">새 비밀번호 (6자리 이상)</label>
+      <input id="qnaSelfNewPassword" type="password" autocomplete="new-password" minlength="6" maxlength="128" required>
+      <label for="qnaSelfConfirmPassword">새 비밀번호 확인</label>
+      <input id="qnaSelfConfirmPassword" type="password" autocomplete="new-password" minlength="6" required>
+      <p style="font-size:13px;color:#777;line-height:1.6">변경하면 모든 기기에서 로그아웃됩니다. 새 비밀번호로 다시 로그인해 주세요.</p>
+      <button type="submit">비밀번호 변경</button>
+      <div id="qnaSelfPasswordMessage" role="status"></div>
+    </form>
+  </div>
+</div>
 <div id="qnaManagePanel" hidden>
   <div class="qna-manage-card" role="dialog" aria-modal="true" aria-labelledby="qnaManageTitle">
-    <div class="qna-manage-head"><h2 id="qnaManageTitle">로그인 관리</h2><button type="button" id="qnaManageClose" aria-label="닫기">×</button></div>
+    <div class="qna-manage-head"><h2 id="qnaManageTitle">계정 관리</h2><button type="button" id="qnaManageClose" aria-label="닫기">×</button></div>
     <form id="qnaAdminUnlockForm">
       <label for="qnaAdminPassword">관리 비밀번호</label>
       <input id="qnaAdminPassword" type="password" required autocomplete="off">
@@ -7688,7 +7715,7 @@
     <div class="qna-manage-tabs"><button id="qnaTabCreate" type="button" aria-pressed="true">계정 등록</button><button id="qnaTabList" type="button" aria-pressed="false">등록 목록</button></div>
     <form id="qnaManageCreateForm">
       <label for="qnaNewUsername">새 아이디</label><input id="qnaNewUsername" required maxlength="40" autocomplete="off">
-      <label for="qnaNewPassword">새 비밀번호</label><input id="qnaNewPassword" type="password" required autocomplete="new-password">
+      <label for="qnaNewPassword">새 비밀번호 (6자리 이상)</label><input id="qnaNewPassword" type="password" minlength="6" maxlength="128" required autocomplete="new-password">
       <button type="submit">계정 등록</button>
     </form>
     <div id="qnaManageList" hidden></div>
@@ -8882,6 +8909,7 @@
   let authReady = false;
   let authChecking = false;
   let accountAdminPassword = "";
+  let canManageAccounts = false;
   function closeAccountManager(){
     accountAdminPassword = "";
     $("qnaAdminPassword").value = "";
@@ -8893,6 +8921,10 @@
   function lockQna(message=""){
     const wasAuthenticated = authReady;
     authReady = false;
+    canManageAccounts = false;
+    $("qnaManageSessionBtn").hidden = true;
+    $("qnaManageDivider").hidden = true;
+    closeSelfPassword();
     entries = [];
     trashEntries = [];
     currentDetailId = null;
@@ -8919,7 +8951,7 @@
         return;
       }
       const {data:member,error:memberError} = await supabaseClient
-        .from("qna_members").select("active").eq("user_id",user.id).maybeSingle();
+        .from("qna_members").select("active,can_manage").eq("user_id",user.id).maybeSingle();
       if(memberError) throw memberError;
       const {data:sessionAllowed,error:sessionError} = await supabaseClient.rpc("is_qna_member");
       if(sessionError) throw sessionError;
@@ -8928,6 +8960,10 @@
         await supabaseClient.auth.signOut({scope:"local"});
         return;
       }
+      canManageAccounts = member.can_manage === true;
+      $("qnaManageSessionBtn").hidden = !canManageAccounts;
+      $("qnaManageDivider").hidden = !canManageAccounts;
+      if(!canManageAccounts && !$("qnaManagePanel").hidden) closeAccountManager();
       if(!authReady){
         authReady = true;
         $("authGate").hidden = true;
@@ -9019,7 +9055,7 @@
           form.className="qna-password-edit";form.hidden=true;
           const input=document.createElement("input");
           input.type="password";input.required=true;input.autocomplete="new-password";
-          input.placeholder="새 비밀번호";input.setAttribute("aria-label",`${member.username} 새 비밀번호`);
+          input.placeholder="새 비밀번호 (6자리 이상)";input.minLength=6;input.setAttribute("aria-label",`${member.username} 새 비밀번호`);
           const save=document.createElement("button");save.type="submit";save.textContent="수정 후 모든 기기 로그아웃";
           form.append(input,save);
           edit.addEventListener("click",()=>{form.hidden=!form.hidden;if(!form.hidden) input.focus();else input.value="";});
@@ -9034,6 +9070,19 @@
           });
           actions.append(edit,remove);row.appendChild(actions);item.append(row,form);
         }
+        const permission=document.createElement("label");permission.className="qna-permission";
+        const checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.checked=member.can_manage===true;
+        const caption=document.createElement("span");caption.textContent="계정 관리 권한";
+        permission.append(checkbox,caption);item.appendChild(permission);
+        checkbox.addEventListener("change",async()=>{
+          const next=checkbox.checked;checkbox.disabled=true;
+          try{
+            await manageQnaAccounts("permission",{user_id:member.user_id,can_manage:next});
+            $("qnaManageMessage").textContent="관리 권한을 변경했어요.";
+            await checkQnaAccess();
+          }catch(error){checkbox.checked=!next;$("qnaManageMessage").textContent=error.message;}
+          finally{checkbox.disabled=false;}
+        });
         list.appendChild(item);
       }
     }catch(error){
@@ -9055,7 +9104,29 @@
     $("qnaManageMessage").textContent = "";
     $("qnaAdminPassword").focus();
   });
-  $("qnaManageSessionBtn").addEventListener("click",()=>$("qnaManageBtn").click());
+  $("qnaManageSessionBtn").addEventListener("click",()=>{ if(canManageAccounts) $("qnaManageBtn").click(); });
+  function closeSelfPassword(){
+    $("qnaPasswordPanel").hidden=true;
+    $("qnaSelfPasswordForm").reset();
+    $("qnaSelfPasswordMessage").textContent="";
+  }
+  $("qnaChangePasswordBtn").addEventListener("click",()=>{
+    closeSelfPassword();$("qnaPasswordPanel").hidden=false;$("qnaCurrentPassword").focus();
+  });
+  $("qnaSelfPasswordClose").addEventListener("click",closeSelfPassword);
+  $("qnaPasswordPanel").addEventListener("click",event=>{if(event.target===$("qnaPasswordPanel")) closeSelfPassword();});
+  $("qnaSelfPasswordForm").addEventListener("submit",async event=>{
+    event.preventDefault();
+    const password=$("qnaSelfNewPassword").value;
+    if(password!==$("qnaSelfConfirmPassword").value){$("qnaSelfPasswordMessage").textContent="새 비밀번호가 서로 달라요.";return;}
+    const button=event.currentTarget.querySelector("button[type=submit]");button.disabled=true;
+    try{
+      await manageQnaAccounts("self_password",{current_password:$("qnaCurrentPassword").value,password});
+      lockQna("비밀번호를 변경했어요. 새 비밀번호로 로그인해 주세요.");
+      await supabaseClient.auth.signOut({scope:"local"});
+    }catch(error){$("qnaSelfPasswordMessage").textContent=error.message;}
+    finally{button.disabled=false;}
+  });
   $("qnaAdminUnlockForm").addEventListener("submit",async event=>{
     event.preventDefault();
     accountAdminPassword = $("qnaAdminPassword").value;
