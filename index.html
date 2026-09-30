@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>으뜸50 무물보</title>
+<title>으뜸50안경 무엇이든 물어보아요!</title>
 <style>
   :root{
     --orange:#FF7A2F;
@@ -7640,7 +7640,9 @@
   #authGate[hidden] { display:none; }
   #authGate { position:fixed; inset:0; z-index:20000; display:grid; place-items:center; background:#faf8f4; padding:24px; font-family:inherit; }
   .auth-card { width:min(100%,380px); background:white; border:1px solid #ece8e1; border-radius:20px; padding:28px; box-shadow:0 16px 45px rgba(0,0,0,.08); }
-  .auth-card h1 { font-size:23px; margin:0 0 8px; }
+  .auth-card h1 { font-size:23px; line-height:1.5; margin:0 0 12px; word-break:keep-all; }
+  .auth-brand { display:block; font-size:16px; margin-bottom:4px; }
+  .auth-highlight { color:#ff7a2f; }
   .auth-card p { color:#777; font-size:14px; margin:0 0 24px; }
   .auth-card label { display:block; font-size:13px; font-weight:700; margin:16px 0 7px; }
   .auth-card input { width:100%; box-sizing:border-box; border:1px solid #d9d4cc; border-radius:10px; padding:13px; font-size:16px; }
@@ -7650,7 +7652,7 @@
   #qnaLogoutBtn { display:none; width:auto; margin:0 auto 8px; background:transparent; border:0; color:#777; font-size:12px; cursor:pointer; }
   body:not(.auth-locked) #qnaLogoutBtn { display:block; }
   #qnaManageBtn[hidden], #qnaManagePanel[hidden] { display:none; }
-  #qnaManageBtn { position:fixed; bottom:10px; left:12px; z-index:90; border:0; background:transparent; color:#999; font-size:11px; cursor:pointer; }
+  #qnaManageBtn { position:fixed; bottom:14px; left:50%; transform:translateX(-50%); z-index:20001; border:0; background:transparent; color:#999; font-size:11px; cursor:pointer; }
   #qnaManagePanel { position:fixed; inset:0; z-index:20010; display:grid; place-items:center; background:rgba(0,0,0,.42); padding:20px; }
   .qna-manage-card { width:min(100%,420px); max-height:85vh; overflow:auto; background:white; border-radius:18px; padding:24px; }
   .qna-manage-head { display:flex; justify-content:space-between; align-items:center; }
@@ -7658,6 +7660,7 @@
   .qna-manage-head button { background:transparent; border:0; font-size:22px; cursor:pointer; }
   .qna-manage-card label { display:block; font-size:12px; margin:12px 0 5px; }
   .qna-manage-card input { width:100%; box-sizing:border-box; padding:11px; border:1px solid #ddd; border-radius:9px; font-size:15px; }
+  #qnaManageContent[hidden], #qnaAdminUnlockForm[hidden] { display:none; }
   .qna-manage-card form>button { width:100%; margin-top:14px; padding:11px; border:0; border-radius:9px; background:#ff7a2f; color:white; cursor:pointer; }
   .qna-manage-row { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eee; padding:10px 0; }
   .qna-manage-row button { border:0; background:#fff0ed; color:#ba4738; border-radius:8px; padding:6px 10px; cursor:pointer; }
@@ -7665,7 +7668,7 @@
 </style>
 <div id="authGate" role="main">
   <form class="auth-card" id="qnaLoginForm">
-    <h1>으뜸50 무물보</h1>
+    <h1><span class="auth-brand">으뜸50안경</span><span class="auth-highlight">무</span>엇이든 <span class="auth-highlight">물</span>어<span class="auth-highlight">보</span>아요!</h1>
     <p>한 번 로그인하면 이 기기에서 로그인 상태가 유지됩니다.</p>
     <label for="qnaUsername">아이디</label>
     <input id="qnaUsername" autocomplete="username" required>
@@ -7677,20 +7680,27 @@
 </div>
 <div id="qnaManagePanel" hidden>
   <div class="qna-manage-card" role="dialog" aria-modal="true" aria-labelledby="qnaManageTitle">
-    <div class="qna-manage-head"><h2 id="qnaManageTitle">계정 관리</h2><button type="button" id="qnaManageClose" aria-label="닫기">×</button></div>
+    <div class="qna-manage-head"><h2 id="qnaManageTitle">로그인 관리</h2><button type="button" id="qnaManageClose" aria-label="닫기">×</button></div>
+    <form id="qnaAdminUnlockForm">
+      <label for="qnaAdminPassword">관리 비밀번호</label>
+      <input id="qnaAdminPassword" type="password" required autocomplete="off">
+      <button type="submit">확인</button>
+    </form>
+    <div id="qnaManageContent" hidden>
     <form id="qnaManageCreateForm">
       <label for="qnaNewUsername">새 아이디</label><input id="qnaNewUsername" required maxlength="40" autocomplete="off">
       <label for="qnaNewPassword">새 비밀번호</label><input id="qnaNewPassword" type="password" required autocomplete="new-password">
       <button type="submit">계정 등록</button>
     </form>
-    <p id="qnaManageMessage" role="status"></p>
     <div id="qnaManageList"></div>
+    </div>
+    <p id="qnaManageMessage" role="status"></p>
   </div>
 </div>
 
 <div class="app" id="app">
   <button id="qnaLogoutBtn" type="button">로그아웃</button>
-  <button id="qnaManageBtn" type="button" hidden>계정 관리</button>
+  <button id="qnaManageBtn" type="button">로그인 관리</button>
 
   <div class="header">
     <div class="brand">
@@ -8874,7 +8884,17 @@
   // 로그인 식별자는 서버에서 찾습니다. 비밀번호는 HTML에 저장하지 않습니다.
   let authReady = false;
   let authChecking = false;
+  let accountAdminPassword = "";
+  function closeAccountManager(){
+    accountAdminPassword = "";
+    $("qnaAdminPassword").value = "";
+    $("qnaNewPassword").value = "";
+    $("qnaManageContent").hidden = true;
+    $("qnaAdminUnlockForm").hidden = false;
+    $("qnaManagePanel").hidden = true;
+  }
   function lockQna(message=""){
+    const wasAuthenticated = authReady;
     authReady = false;
     entries = [];
     trashEntries = [];
@@ -8884,8 +8904,8 @@
     document.body.classList.remove("detail-open");
     document.body.style.overflow = "";
     document.body.classList.add("auth-locked");
-    $("qnaManageBtn").hidden = true;
-    $("qnaManagePanel").hidden = true;
+    $("qnaManageBtn").hidden = false;
+    if(wasAuthenticated) closeAccountManager();
     $("authGate").hidden = false;
     $("authError").textContent = message;
   }
@@ -8894,9 +8914,15 @@
     authChecking = true;
     try{
       const {data:{user},error:userError} = await supabaseClient.auth.getUser();
-      if(userError || !user){ lockQna(); return; }
+      if(userError || !user){
+        lockQna();
+        if(userError && [401,403,404].includes(userError.status)){
+          await supabaseClient.auth.signOut({scope:"local"});
+        }
+        return;
+      }
       const {data:member,error:memberError} = await supabaseClient
-        .from("qna_members").select("active,is_admin").eq("user_id",user.id).maybeSingle();
+        .from("qna_members").select("active").eq("user_id",user.id).maybeSingle();
       if(memberError) throw memberError;
       if(!member?.active){
         lockQna("사용할 수 없는 계정입니다.");
@@ -8910,7 +8936,7 @@
         document.body.classList.remove("auth-locked");
         await loadEntries();
       }
-      $("qnaManageBtn").hidden = !member.is_admin;
+      $("qnaManageBtn").hidden = false;
     }catch(error){
       console.error("Q&A 계정 확인 실패",error);
       lockQna("연결을 확인한 뒤 다시 로그인해 주세요.");
@@ -8937,12 +8963,13 @@
     }finally{ btn.disabled = false; }
   });
   $("qnaLogoutBtn").addEventListener("click",async()=>{
+    closeAccountManager();
     lockQna();
     await supabaseClient.auth.signOut();
   });
   async function manageQnaAccounts(action, payload={}){
     const {data,error} = await supabaseClient.functions.invoke("qna-accounts",{
-      body:{action,...payload}
+      body:{action,...payload,admin_password:accountAdminPassword}
     });
     if(error || data?.error) throw error || new Error(data.error);
     return data;
@@ -8957,9 +8984,9 @@
         const row = document.createElement("div");
         row.className = "qna-manage-row";
         const name = document.createElement("span");
-        name.textContent = member.username + (member.is_admin ? " · 관리자" : "");
+        name.textContent = member.username;
         row.appendChild(name);
-        if(!member.is_admin){
+        {
           const remove = document.createElement("button");
           remove.type = "button";
           remove.textContent = "삭제";
@@ -8984,13 +9011,31 @@
     }
   }
   $("qnaManageBtn").addEventListener("click",()=>{
+    closeAccountManager();
     $("qnaManagePanel").hidden = false;
     $("qnaManageMessage").textContent = "";
-    renderQnaAccounts();
+    $("qnaAdminPassword").focus();
   });
-  $("qnaManageClose").addEventListener("click",()=>$("qnaManagePanel").hidden=true);
+  $("qnaAdminUnlockForm").addEventListener("submit",async event=>{
+    event.preventDefault();
+    accountAdminPassword = $("qnaAdminPassword").value;
+    $("qnaAdminPassword").value = "";
+    const button = event.currentTarget.querySelector("button");
+    button.disabled = true;
+    try{
+      await manageQnaAccounts("list");
+      $("qnaAdminUnlockForm").hidden = true;
+      $("qnaManageContent").hidden = false;
+      $("qnaManageMessage").textContent = "";
+      await renderQnaAccounts();
+    }catch(error){
+      accountAdminPassword = "";
+      $("qnaManageMessage").textContent = "관리 비밀번호 또는 서버 연결을 확인해 주세요.";
+    }finally{button.disabled = false;}
+  });
+  $("qnaManageClose").addEventListener("click",closeAccountManager);
   $("qnaManagePanel").addEventListener("click",event=>{
-    if(event.target === $("qnaManagePanel")) $("qnaManagePanel").hidden=true;
+    if(event.target === $("qnaManagePanel")) closeAccountManager();
   });
   $("qnaManageCreateForm").addEventListener("submit",async event=>{
     event.preventDefault();
