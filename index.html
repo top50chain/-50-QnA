@@ -7667,6 +7667,14 @@
   .qna-manage-card form>button { width:100%; margin-top:14px; padding:11px; border:0; border-radius:9px; background:#ff7a2f; color:white; cursor:pointer; }
   .qna-manage-row { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #eee; padding:10px 0; }
   .qna-manage-row button { border:0; background:#fff0ed; color:#ba4738; border-radius:8px; padding:6px 10px; cursor:pointer; }
+  #qnaManageList[hidden], #qnaManageCreateForm[hidden] { display:none; }
+  .qna-manage-tabs { display:flex; gap:8px; margin:18px 0; }
+  .qna-manage-tabs button { flex:1; border:1px solid #ddd; background:white; border-radius:8px; padding:10px; cursor:pointer; }
+  .qna-manage-tabs button[aria-pressed="true"] { background:#fff3e9; color:#c95616; border-color:#ff7a2f; }
+  .qna-account-item { border-bottom:1px solid #eee; padding:12px 0; }
+  .qna-account-actions { display:flex; gap:6px; }
+  .qna-password-edit { margin-top:8px; }
+  .qna-password-edit[hidden] { display:none; }
   #qnaManageMessage { font-size:13px; min-height:20px; color:#a83b2f; }
 </style>
 <div id="authGate" role="main">
@@ -7694,12 +7702,13 @@
       <button type="submit">확인</button>
     </form>
     <div id="qnaManageContent" hidden>
+    <div class="qna-manage-tabs"><button id="qnaTabCreate" type="button" aria-pressed="true">계정 등록</button><button id="qnaTabList" type="button" aria-pressed="false">등록 목록</button></div>
     <form id="qnaManageCreateForm">
       <label for="qnaNewUsername">새 아이디</label><input id="qnaNewUsername" required maxlength="40" autocomplete="off">
       <label for="qnaNewPassword">새 비밀번호</label><input id="qnaNewPassword" type="password" required autocomplete="new-password">
       <button type="submit">계정 등록</button>
     </form>
-    <div id="qnaManageList"></div>
+    <div id="qnaManageList" hidden></div>
     </div>
     <p id="qnaManageMessage" role="status"></p>
   </div>
@@ -8931,9 +8940,11 @@
       const {data:member,error:memberError} = await supabaseClient
         .from("qna_members").select("active").eq("user_id",user.id).maybeSingle();
       if(memberError) throw memberError;
-      if(!member?.active){
+      const {data:sessionAllowed,error:sessionError} = await supabaseClient.rpc("is_qna_member");
+      if(sessionError) throw sessionError;
+      if(!member?.active || !sessionAllowed){
         lockQna("사용할 수 없는 계정입니다.");
-        await supabaseClient.auth.signOut();
+        await supabaseClient.auth.signOut({scope:"local"});
         return;
       }
       if(!authReady){
@@ -8978,7 +8989,14 @@
     const {data,error} = await supabaseClient.functions.invoke("qna-accounts",{
       body:{action,...payload,admin_password:accountAdminPassword}
     });
-    if(error || data?.error) throw error || new Error(data.error);
+    if(error){
+      let message = "서버에 연결하지 못했어요. Edge Function 배포와 연결을 확인해 주세요.";
+      if(error.context && typeof error.context.json === "function"){
+        try { const detail=await error.context.json(); if(detail.error) message=detail.error; } catch {}
+      }
+      throw new Error(message);
+    }
+    if(data?.error) throw new Error(data.error);
     return data;
   }
   async function renderQnaAccounts(){
@@ -8987,7 +9005,10 @@
     try{
       const data = await manageQnaAccounts("list");
       list.replaceChildren();
+      if(!(data.members || []).length) list.textContent="등록된 계정이 없어요.";
       for(const member of data.members || []){
+        const item=document.createElement("div");
+        item.className="qna-account-item";
         const row = document.createElement("div");
         row.className = "qna-manage-row";
         const name = document.createElement("span");
@@ -9009,14 +9030,44 @@
               remove.disabled = false;
             }
           });
-          row.appendChild(remove);
+          const actions=document.createElement("div");
+          actions.className="qna-account-actions";
+          const edit=document.createElement("button");
+          edit.type="button";edit.textContent="비밀번호 수정";
+          const form=document.createElement("form");
+          form.className="qna-password-edit";form.hidden=true;
+          const input=document.createElement("input");
+          input.type="password";input.required=true;input.autocomplete="new-password";
+          input.placeholder="새 비밀번호";input.setAttribute("aria-label",`${member.username} 새 비밀번호`);
+          const save=document.createElement("button");save.type="submit";save.textContent="수정 후 모든 기기 로그아웃";
+          form.append(input,save);
+          edit.addEventListener("click",()=>{form.hidden=!form.hidden;if(!form.hidden) input.focus();else input.value="";});
+          form.addEventListener("submit",async event=>{
+            event.preventDefault();save.disabled=true;
+            try{
+              await manageQnaAccounts("password",{user_id:member.user_id,password:input.value});
+              input.value="";form.hidden=true;
+              $("qnaManageMessage").textContent="비밀번호를 수정했어요. 기존 기기는 다시 로그인해야 합니다.";
+            }catch(error){$("qnaManageMessage").textContent=error.message;}
+            finally{save.disabled=false;}
+          });
+          actions.append(edit,remove);row.appendChild(actions);item.append(row,form);
         }
-        list.appendChild(row);
+        list.appendChild(item);
       }
     }catch(error){
-      list.textContent = "계정 목록을 불러오지 못했어요.";
+      list.textContent = error.message;
     }
   }
+  function showAccountTab(tab){
+    const listing=tab==="list";
+    $("qnaManageCreateForm").hidden=listing;$("qnaManageList").hidden=!listing;
+    $("qnaTabCreate").setAttribute("aria-pressed",String(!listing));
+    $("qnaTabList").setAttribute("aria-pressed",String(listing));
+    if(listing && accountAdminPassword) renderQnaAccounts();
+  }
+  $("qnaTabCreate").addEventListener("click",()=>showAccountTab("create"));
+  $("qnaTabList").addEventListener("click",()=>showAccountTab("list"));
   $("qnaManageBtn").addEventListener("click",()=>{
     closeAccountManager();
     $("qnaManagePanel").hidden = false;
@@ -9038,7 +9089,7 @@
       await renderQnaAccounts();
     }catch(error){
       accountAdminPassword = "";
-      $("qnaManageMessage").textContent = "관리 비밀번호 또는 서버 연결을 확인해 주세요.";
+      $("qnaManageMessage").textContent = error.message;
     }finally{button.disabled = false;}
   });
   $("qnaManageClose").addEventListener("click",closeAccountManager);
@@ -9055,10 +9106,11 @@
       await manageQnaAccounts("create",{username,password});
       $("qnaNewUsername").value = "";
       $("qnaNewPassword").value = "";
-      $("qnaManageMessage").textContent = "계정을 등록했어요.";
+      $("qnaManageMessage").textContent = "계정을 등록했어요. 등록 목록에서 확인할 수 있습니다.";
+      showAccountTab("list");
       await renderQnaAccounts();
     }catch(error){
-      $("qnaManageMessage").textContent = "등록에 실패했어요. 이름 중복 또는 비밀번호 기준을 확인해 주세요.";
+      $("qnaManageMessage").textContent = error.message;
     }finally{ button.disabled = false; }
   });
   document.addEventListener("visibilitychange",()=>{
