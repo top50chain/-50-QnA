@@ -7639,7 +7639,8 @@
   body.auth-locked #app { display:none; }
   #authGate[hidden] { display:none; }
   #authGate { position:fixed; inset:0; z-index:20000; display:grid; place-items:center; background:#faf8f4; padding:24px; font-family:inherit; }
-  .auth-card { width:min(100%,380px); background:white; border:1px solid #ece8e1; border-radius:20px; padding:28px; box-shadow:0 16px 45px rgba(0,0,0,.08); }
+  .auth-layout { width:min(100%,380px); display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .auth-card { box-sizing:border-box; width:100%; background:white; border:1px solid #ece8e1; border-radius:20px; padding:28px; box-shadow:0 16px 45px rgba(0,0,0,.08); }
   .auth-card h1 { font-size:23px; line-height:1.5; margin:0 0 12px; word-break:keep-all; }
   .auth-brand { display:block; font-size:16px; margin-bottom:4px; }
   .auth-highlight { color:#ff7a2f; }
@@ -7652,7 +7653,9 @@
   #qnaLogoutBtn { display:none; width:auto; margin:0 auto 8px; background:transparent; border:0; color:#777; font-size:12px; cursor:pointer; }
   body:not(.auth-locked) #qnaLogoutBtn { display:block; }
   #qnaManageBtn[hidden], #qnaManagePanel[hidden] { display:none; }
-  #qnaManageBtn { position:fixed; bottom:14px; left:50%; transform:translateX(-50%); z-index:20001; border:0; background:transparent; color:#999; font-size:11px; cursor:pointer; }
+  #qnaManageBtn { position:static; border:0; background:transparent; color:#888; font-size:12px; padding:6px 12px; cursor:pointer; }
+  #qnaManageSessionBtn { display:none; position:fixed; bottom:14px; left:50%; transform:translateX(-50%); z-index:90; border:0; background:transparent; color:#888; font-size:12px; padding:6px 12px; cursor:pointer; }
+  body:not(.auth-locked) #qnaManageSessionBtn { display:block; }
   #qnaManagePanel { position:fixed; inset:0; z-index:20010; display:grid; place-items:center; background:rgba(0,0,0,.42); padding:20px; }
   .qna-manage-card { width:min(100%,420px); max-height:85vh; overflow:auto; background:white; border-radius:18px; padding:24px; }
   .qna-manage-head { display:flex; justify-content:space-between; align-items:center; }
@@ -7667,6 +7670,7 @@
   #qnaManageMessage { font-size:13px; min-height:20px; color:#a83b2f; }
 </style>
 <div id="authGate" role="main">
+  <div class="auth-layout">
   <form class="auth-card" id="qnaLoginForm">
     <h1><span class="auth-brand">으뜸50안경</span><span class="auth-highlight">무</span>엇이든 <span class="auth-highlight">물</span>어<span class="auth-highlight">보</span>아요!</h1>
     <p>한 번 로그인하면 이 기기에서 로그인 상태가 유지됩니다.</p>
@@ -7677,7 +7681,10 @@
     <button id="qnaLoginBtn" type="submit">로그인</button>
     <div id="authError" role="alert"></div>
   </form>
+  <button id="qnaManageBtn" type="button">로그인 관리</button>
+  </div>
 </div>
+<button id="qnaManageSessionBtn" type="button">로그인 관리</button>
 <div id="qnaManagePanel" hidden>
   <div class="qna-manage-card" role="dialog" aria-modal="true" aria-labelledby="qnaManageTitle">
     <div class="qna-manage-head"><h2 id="qnaManageTitle">로그인 관리</h2><button type="button" id="qnaManageClose" aria-label="닫기">×</button></div>
@@ -7698,9 +7705,9 @@
   </div>
 </div>
 
+
 <div class="app" id="app">
   <button id="qnaLogoutBtn" type="button">로그아웃</button>
-  <button id="qnaManageBtn" type="button">로그인 관리</button>
 
   <div class="header">
     <div class="brand">
@@ -9016,6 +9023,7 @@
     $("qnaManageMessage").textContent = "";
     $("qnaAdminPassword").focus();
   });
+  $("qnaManageSessionBtn").addEventListener("click",()=>$("qnaManageBtn").click());
   $("qnaAdminUnlockForm").addEventListener("submit",async event=>{
     event.preventDefault();
     accountAdminPassword = $("qnaAdminPassword").value;
