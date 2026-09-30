@@ -7608,6 +7608,124 @@
 }
 </style>
 
+<style>
+@media(max-width:679px){
+/* Open-information readability: applies to existing and new templates. */
+:is(#aInput,.detail-a) .open-checklist.open-checklist { font-size:14px !important; line-height:1.55 !important; white-space:normal !important; }
+:is(#aInput,.detail-a) .open-checklist .open-summary { padding:12px 16px !important; gap:16px !important; margin-bottom:14px !important; grid-template-columns:minmax(0,1.4fr) minmax(120px,1fr) minmax(120px,1fr) minmax(0,1.1fr) !important; }
+:is(#aInput,.detail-a) .open-checklist .open-summary-item { font-size:13px !important; font-weight:650; color:#777 !important; line-height:1.5 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-summary-item strong { font-size:16px !important; line-height:1.5 !important; margin-top:6px !important; }
+:is(#aInput,.detail-a) .open-checklist .open-card { margin:14px 0 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-card-head { padding:12px 16px !important; gap:12px !important; }
+:is(#aInput,.detail-a) .open-checklist .open-card-title { font-size:15px !important; line-height:1.5 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-manager { font-size:12px !important; }
+:is(#aInput,.detail-a) .open-checklist .open-manager b { font-size:14px !important; }
+:is(#aInput,.detail-a) .open-checklist .open-card-body { padding:12px 16px !important; }
+:is(#aInput,.detail-a) .open-checklist :is(.open-check-item,.open-check-text,.open-date-label,.open-line,.open-line-label,.open-choice,.open-choice-label,.open-code-type,.open-code-request,.open-edit) { font-size:14px !important; line-height:1.55 !important; }
+:is(#aInput,.detail-a) .open-checklist :is(.open-group-title,.open-subsection-title) { font-size:14px !important; line-height:1.5 !important; margin-bottom:10px !important; }
+:is(#aInput,.detail-a) .open-checklist .open-group-section { padding:14px 0 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-check-item { padding:6px 0 !important; gap:9px !important; align-items:flex-start !important; }
+:is(#aInput,.detail-a) .open-checklist .open-check { margin-top:3px; }
+:is(#aInput,.detail-a) .open-checklist .open-date-field { display:inline-flex !important; position:relative !important; flex:none !important; box-sizing:border-box !important; width:108px !important; min-width:108px !important; max-width:100% !important; height:32px !important; min-height:32px !important; max-height:32px !important; align-self:start !important; margin-bottom:0 !important; padding:0 4px !important; align-items:center !important; border-radius:0 !important; border-bottom:1px solid #e4e4e8 !important; background:transparent !important; }
+:is(#aInput,.detail-a) .open-checklist .open-date-display { position:static !important; inset:auto !important; transform:none !important; font-size:15px !important; line-height:1.5 !important; font-weight:700 !important; white-space:nowrap !important; }
+:is(#aInput,.detail-a) .open-checklist .open-date-field::before { left:4px !important; font-size:13px !important; }
+:is(#aInput,.detail-a) .open-checklist .open-date-field .open-date-input { position:absolute !important; inset:0 !important; margin:0 !important; width:100% !important; min-width:0 !important; max-width:100% !important; height:100% !important; padding:0 !important; opacity:.001 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-summary-item .open-date-field { margin-top:6px !important; background:transparent !important; }
+:is(#aInput,.detail-a) .open-checklist .open-summary-item.open-date-accent .open-date-field { background:transparent !important; border-bottom-color:#ffc7a5 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-summary-item.open-date-accent .open-date-display { color:var(--orange) !important; font-size:17px !important; }
+:is(#aInput,.detail-a) .open-checklist .open-payment-pair-row { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px 20px !important; padding:7px 0 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-date-check-item { display:grid !important; grid-template-columns:minmax(0,1fr) 108px !important; grid-template-areas:none !important; align-items:center !important; gap:12px !important; width:100% !important; min-width:0 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-date-label { min-width:0 !important; width:auto !important; white-space:normal !important; word-break:keep-all !important; }
+:is(#aInput,.detail-a) .open-checklist .open-code-row { display:grid !important; grid-template-columns:minmax(0,1fr) 96px 52px 108px !important; grid-template-areas:none !important; gap:14px !important; align-items:center !important; padding:14px 0 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-code-type { grid-column:1 !important; grid-row:1 !important; width:auto !important; padding:0 !important; white-space:normal !important; word-break:keep-all !important; overflow-wrap:normal !important; }
+:is(#aInput,.detail-a) .open-checklist .open-lens-line { display:block; margin:3px 0; line-height:1.7; }
+:is(#aInput,.detail-a) .open-checklist .open-lens-line b { white-space:nowrap; }
+:is(#aInput,.detail-a) .open-checklist .open-code-request { grid-column:2 !important; grid-row:1 !important; width:auto !important; white-space:nowrap !important; }
+:is(#aInput,.detail-a) .open-checklist .open-code-label { grid-column:3 !important; grid-row:1 !important; width:auto !important; font-size:13px !important; line-height:1.5 !important; white-space:nowrap !important; }
+:is(#aInput,.detail-a) .open-checklist .open-code-row > .open-date-field { grid-column:4 !important; grid-row:1 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-code-row .open-amount-label { grid-column:3 !important; grid-row:2 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-code-row .open-amount-date { grid-column:4 !important; grid-row:2 !important; width:118px !important; }
+:is(#aInput,.detail-a) .open-checklist .open-code-row .open-del-row { grid-column:1 / -1 !important; grid-row:auto !important; justify-self:end; }
+
+@media(max-width:900px){
+ :is(#aInput,.detail-a) .open-checklist .open-summary { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-summary-item:first-child { grid-column:1 / -1 !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-code-type { grid-column:1 / -1 !important; grid-row:1 !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-code-row { grid-template-columns:minmax(90px,1fr) 70px 108px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-code-request { grid-column:1 !important; grid-row:2 !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-code-label { grid-column:2 !important; grid-row:2 !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-code-row > .open-date-field { grid-column:3 !important; grid-row:2 !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-code-row .open-amount-label { grid-column:2 !important; grid-row:3 !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-code-row .open-amount-date { grid-column:3 !important; grid-row:3 !important; }
+}
+@media(max-width:679px){
+ :is(#aInput,.detail-a) .open-checklist .open-summary { padding:14px !important; gap:14px 12px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-card-body { padding:12px 14px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-card-head { padding:12px 14px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-payment-pair-row { grid-template-columns:minmax(0,1fr) !important; gap:9px !important; padding:6px 0 !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-date-check-item { grid-template-columns:minmax(0,1fr) !important; gap:2px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-date-check-item .open-date-field { justify-self:start !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-code-row { grid-template-columns:minmax(0,1fr) 70px 108px !important; gap:12px 8px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-code-row .open-date-field { width:108px !important; min-width:108px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-code-request { font-size:13px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-code-type { font-size:14px !important; }
+}
+
+}
+body.detail-open .qna-session-actions { display:none !important; }
+@media(min-width:680px){
+  .detail { width:min(1060px, calc(100vw - 56px)) !important; }
+  #overlay .modal { width:min(1060px, calc(100vw - 56px)) !important; max-width:1060px !important; }
+  :is(#aInput,.detail-a) .open-checklist .qna-pc-type { font-size:calc(var(--qna-original-font) + 1.5px) !important; }
+  :is(#aInput,.detail-a) .open-checklist .open-lens-line { display:inline; }
+  :is(#aInput,.detail-a) .open-checklist .open-lens-line + .open-lens-line::before { content:", "; }
+}
+</style>
+<style>
+/* Payments stay together; the interior deadline has its own column. */
+:is(#aInput,.detail-a) .open-checklist .open-payment-organized { display:grid !important; grid-template-columns:minmax(0,1.65fr) minmax(0,1fr) !important; gap:24px !important; align-items:start !important; padding:4px 0 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-payment-left { display:flex; flex-direction:column; gap:12px; min-width:0; }
+:is(#aInput,.detail-a) .open-checklist .open-payment-left > .open-check-item { border-bottom:0 !important; margin:0 !important; padding:4px 0 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-payment-promotion { display:flex; align-items:center; justify-content:flex-start; gap:16px; min-width:0; }
+:is(#aInput,.detail-a) .open-checklist .open-payment-promotion > .open-check-item { flex:0 0 auto !important; border-bottom:0 !important; padding:4px 0 !important; margin:0 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-payment-promotion .open-payment-ad-date { display:flex !important; grid-template-columns:none !important; gap:6px !important; align-items:center !important; width:auto !important; flex:0 0 auto !important; min-width:0 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-payment-ad-date .open-date-label { color:#888 !important; font-weight:500 !important; font-size:11.5px !important; white-space:nowrap !important; }
+:is(#aInput,.detail-a) .open-checklist .open-payment-organized .open-date-field { flex:none !important; width:94px !important; min-width:94px !important; height:30px !important; min-height:30px !important; max-height:30px !important; padding:0 4px !important; align-self:center !important; background:transparent !important; border-radius:0 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-payment-organized .open-date-display { position:static !important; transform:none !important; white-space:nowrap !important; font-weight:700 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-payment-organized > .open-interior-date-item { display:flex !important; flex-direction:column; align-items:flex-start !important; justify-content:flex-start !important; gap:4px !important; width:auto !important; min-width:0 !important; margin:0 !important; padding:4px 0 4px 20px !important; border-left:1px solid #ededf0 !important; }
+:is(#aInput,.detail-a) .open-checklist .open-payment-organized > .open-interior-date-item .open-date-label { white-space:normal !important; }
+@media(max-width:679px){
+ :is(#aInput,.detail-a) .open-checklist .open-payment-organized { grid-template-columns:minmax(0,1fr) !important; gap:16px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-payment-promotion { gap:8px !important; justify-content:space-between; }
+ :is(#aInput,.detail-a) .open-checklist .open-payment-promotion .open-check-text { font-size:13px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-payment-promotion .open-check-item { gap:6px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-payment-promotion .open-date-field { width:86px !important; min-width:86px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-payment-organized .open-date-display { font-size:14px !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-payment-organized > .open-interior-date-item { padding:12px 0 0 !important; border-left:0 !important; border-top:1px solid #ededf0 !important; }
+}
+</style>
+<style>
+/* Align the interior deadline with the first payment row. */
+:is(#aInput,.detail-a) .open-checklist .open-payment-organized > .open-interior-date-item {
+  flex-direction:row !important; align-items:center !important; justify-content:flex-start !important;
+  gap:10px !important; padding:4px 0 !important; border-left:0 !important;
+}
+:is(#aInput,.detail-a) .open-checklist .open-payment-organized > .open-interior-date-item .open-date-field {
+  align-self:center !important; margin:0 !important; flex:none !important;
+}
+@media(max-width:679px){
+ :is(#aInput,.detail-a) .open-checklist .open-payment-organized > .open-interior-date-item {
+   padding:12px 0 0 !important; justify-content:space-between !important; gap:8px !important;
+ }
+}
+</style>
+<style>
+@media(max-width:679px){
+ :is(#aInput,.detail-a) .open-checklist .open-summary-item:nth-child(2) { grid-column:1 / -1 !important; }
+ :is(#aInput,.detail-a) .open-checklist .open-summary-item:nth-child(3),
+ :is(#aInput,.detail-a) .open-checklist .open-summary-item:nth-child(4) { grid-column:auto !important; }
+}
+</style>
 </head>
 <body class="auth-locked">
 
@@ -8579,10 +8697,77 @@
     return sanitizeRichHtml(looksLikeHtml(value) ? value : plainTextToHtml(value));
   }
 
+  let openTypographyFrame=0;
+  function refreshOpenTypography(){
+    if(openTypographyFrame) return;
+    openTypographyFrame=requestAnimationFrame(()=>{
+      openTypographyFrame=0;
+      if(!window.matchMedia("(min-width:680px)").matches) return;
+      const nodes=[...document.querySelectorAll("#aInput .open-checklist, #aInput .open-checklist *, .detail-a .open-checklist, .detail-a .open-checklist *")]
+        .filter(node=>!node.classList.contains("qna-pc-type") && !node.style.getPropertyValue("--qna-original-font"));
+      const original=nodes.map(node=>[node,getComputedStyle(node).fontSize]);
+      original.forEach(([node,size])=>{
+        if(!/^\d+(\.\d+)?px$/.test(size)) return;
+        node.style.setProperty("--qna-original-font",size);
+        node.classList.add("qna-pc-type");
+      });
+    });
+  }
+  const openTypographyObserver=new MutationObserver(()=>{normalizeOpenPaymentLayout(document);refreshOpenTypography();});
+  [$("aInput"),$("detailScroll")].filter(Boolean).forEach(node=>openTypographyObserver.observe(node,{childList:true,subtree:true}));
+  window.matchMedia("(min-width:680px)").addEventListener("change",refreshOpenTypography);
+
+  function normalizeOpenSummary(root){
+    root.querySelectorAll(".open-checklist .open-summary").forEach(summary=>{
+      const items=[...summary.children];
+      const contact=items.find(item=>item.classList.contains("open-summary-item") && item.textContent.trim().startsWith("연락처"));
+      if(contact && items[1]!==contact) summary.insertBefore(contact,items[1] || null);
+    });
+  }
+
+  function normalizeOpenPaymentLayout(root){
+    normalizeOpenSummary(root);
+    root.querySelectorAll(".open-payment-two-lines").forEach(group=>{
+      if(group.classList.contains("open-payment-organized")) return;
+      const items=[...group.querySelectorAll(".open-check-item")];
+      const fee=items.find(item=>item.textContent.includes("가맹비"));
+      const promotion=items.find(item=>item.textContent.includes("홍보비"));
+      const interior=group.querySelector(".open-interior-date-item");
+      const planned=[...group.querySelectorAll(".open-date-check-item")].find(item=>item!==interior && item.textContent.includes("홍보비"));
+      if(!fee || !promotion || !interior || !planned) return;
+      const payments=document.createElement("div");payments.className="open-payment-left";
+      const promoRow=document.createElement("div");promoRow.className="open-payment-promotion";
+      planned.classList.add("open-payment-ad-date");
+      const label=planned.querySelector(".open-date-label");
+      if(label && label.textContent.trim()==="홍보비 입금예정일") label.textContent="예정일";
+      promoRow.append(promotion,planned);payments.append(fee,promoRow);
+      group.replaceChildren(payments,interior);
+      group.classList.add("open-payment-organized");
+    });
+  }
+
+  function normalizeOpenLensRows(root){
+    if(window.matchMedia("(min-width:680px)").matches) return;
+    root.querySelectorAll(".open-checklist .open-code-type").forEach(type=>{
+      if(type.querySelector(".open-lens-line")) return;
+      const nodes=[...type.childNodes];
+      const split=nodes.findIndex(node=>node.nodeType===1 && node.tagName==="B" && node.textContent.trim()==="안경렌즈");
+      if(split<0 || !type.textContent.includes("콘택트렌즈")) return;
+      const first=document.createElement("span"),second=document.createElement("span");
+      first.className=second.className="open-lens-line";
+      nodes.slice(0,split).forEach(node=>first.appendChild(node));
+      nodes.slice(split).forEach(node=>second.appendChild(node));
+      if(first.lastChild?.nodeType===3) first.lastChild.textContent=first.lastChild.textContent.replace(/,\s*$/," ");
+      type.replaceChildren(first,second);
+    });
+  }
+
   function renderAnswerHtml(value){
     const html = normalizeAnswerHtml(value);
     const template = document.createElement("template");
     template.innerHTML = html;
+    normalizeOpenPaymentLayout(template.content);
+    normalizeOpenLensRows(template.content);
 
     // 광고 계획 메모는 contenteditable에서 Enter를 누를 때 브라우저가 <div>/<p>를 만들 수 있습니다.
     // 상세 화면에서는 이 블록 태그들의 자체 높이 때문에 30px 줄 배경과 글자가 어긋날 수 있으므로
@@ -10059,6 +10244,7 @@
     $("detailDelBtn").style.display = isArchivedEntry(e) ? "none" : "";
     $("copyHintText").textContent = `복사 ${e.copyCount||0}회`;
     document.body.classList.add("detail-open");
+    refreshOpenTypography();
     document.body.style.overflow = "hidden";
     updateDetailTop();
     $("detailPage").classList.toggle("notice-detail", Boolean(e.isNotice || e.isUpdate));
@@ -11168,7 +11354,7 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
               <div class="open-group-title" contenteditable="true">사업자등록증 전달 · 코드 생성</div>
               <div class="open-row-list">
                 <div class="open-code-row">
-                  <span class="open-code-type" contenteditable="true"><b>콘택트렌즈</b> (미광/알콘/아큐브/바슈롬/네오비전/쿠퍼/네온), <b>안경렌즈</b> (케미/나노)</span>
+                  <span class="open-code-type" contenteditable="true"><span class="open-lens-line"><b>콘택트렌즈</b> (미광/알콘/아큐브/바슈롬/네오비전/쿠퍼/네온)</span><span class="open-lens-line"><b>안경렌즈</b> (케미/나노)</span></span>
                   <span class="open-code-request"><span class="open-check" contenteditable="false" aria-label="콘택트렌즈·안경렌즈 코드신청"></span>코드신청</span>
                   <span class="open-code-label open-ship-label">출고일</span>
                   ${openDateInput("출고일 날짜 선택")}
@@ -11357,6 +11543,7 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
     }
 
     editor.innerHTML = buildOpenInfoTemplate();
+    syncAllOpenDates(editor);
     editor.querySelector(".open-checklist")?.classList.remove("is-editing");
     updateOpenTemplateActions();
     refreshBusinessLicenseUI(editor);
@@ -12108,6 +12295,8 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
   }
 
   function syncAllOpenDates(scope = $("aInput")){
+    if(scope){normalizeOpenPaymentLayout(scope);normalizeOpenLensRows(scope);}
+    refreshOpenTypography();
     scope?.querySelectorAll?.(".open-date-input").forEach(syncOpenDateField);
   }
 
