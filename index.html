@@ -7626,12 +7626,15 @@
   .auth-card button { width:100%; border:0; border-radius:10px; background:#ff7a2f; color:white; padding:13px; margin-top:22px; font-size:16px; font-weight:700; cursor:pointer; }
   .auth-card button:disabled { opacity:.6; cursor:wait; }
   #authError { min-height:20px; color:#c83b30; font-size:13px; margin-top:12px; }
-  #qnaLogoutBtn { display:none; width:auto; margin:0 auto 8px; background:transparent; border:0; color:#777; font-size:12px; cursor:pointer; }
-  body:not(.auth-locked) #qnaLogoutBtn { display:block; }
   #qnaManageBtn[hidden], #qnaManagePanel[hidden] { display:none; }
   #qnaManageBtn { position:static; border:0; background:transparent; color:#888; font-size:12px; padding:6px 12px; cursor:pointer; }
-  #qnaManageSessionBtn { display:none; position:fixed; bottom:14px; left:50%; transform:translateX(-50%); z-index:90; border:0; background:transparent; color:#888; font-size:12px; padding:6px 12px; cursor:pointer; }
-  body:not(.auth-locked) #qnaManageSessionBtn { display:block; }
+  .qna-account-actions { display:none; position:fixed; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%); z-index:90; align-items:center; gap:8px; padding:7px 12px; background:rgba(255,255,255,.96); border:1px solid #ececef; border-radius:24px; box-shadow:0 3px 16px rgba(0,0,0,.04); white-space:nowrap; }
+  body:not(.auth-locked) .qna-account-actions { display:flex; }
+  body:not(.auth-locked) #app { padding-bottom:100px; }
+  .qna-account-actions button { display:block; position:static; transform:none; width:auto; margin:0; padding:9px 12px; background:transparent; border:0; border-radius:14px; color:#777; font:inherit; font-size:12px; cursor:pointer; }
+  .qna-account-actions button:hover { background:#f6f6f7; color:#333; }
+  .qna-account-actions button:focus-visible { outline:2px solid #ff7a2f; outline-offset:2px; }
+  .qna-account-divider { width:1px; height:12px; background:#ddd; }
   #qnaManagePanel { position:fixed; inset:0; z-index:20010; display:grid; place-items:center; background:rgba(0,0,0,.42); padding:20px; }
   .qna-manage-card { width:min(100%,420px); max-height:85vh; overflow:auto; background:white; border-radius:18px; padding:24px; }
   .qna-manage-head { display:flex; justify-content:space-between; align-items:center; }
@@ -7668,7 +7671,11 @@
   <button id="qnaManageBtn" type="button">로그인 관리</button>
   </div>
 </div>
-<button id="qnaManageSessionBtn" type="button">로그인 관리</button>
+<nav class="qna-account-actions" aria-label="계정 메뉴">
+  <button id="qnaManageSessionBtn" type="button">로그인 관리</button>
+  <span class="qna-account-divider" aria-hidden="true"></span>
+  <button id="qnaLogoutBtn" type="button">로그아웃</button>
+</nav>
 <div id="qnaManagePanel" hidden>
   <div class="qna-manage-card" role="dialog" aria-modal="true" aria-labelledby="qnaManageTitle">
     <div class="qna-manage-head"><h2 id="qnaManageTitle">로그인 관리</h2><button type="button" id="qnaManageClose" aria-label="닫기">×</button></div>
@@ -7692,7 +7699,6 @@
 
 
 <div class="app" id="app">
-  <button id="qnaLogoutBtn" type="button">로그아웃</button>
 
   <div class="header">
     <div class="brand">
