@@ -9249,7 +9249,23 @@ body.detail-open .qna-session-actions { display:none !important; }
         $("authGate").hidden = true;
         $("authError").textContent = "";
         document.body.classList.remove("auth-locked");
-        await loadEntries();
+        try{
+          await loadEntries();
+        }catch(loadError){
+          // 계정 인증 성공 후의 화면 오류로 로그인 상태를 잠그지 않습니다.
+          console.error("Q&A 화면 불러오기 실패",loadError);
+          listEl.replaceChildren();
+          const loadingMessage = document.createElement("div");
+          loadingMessage.className = "loading-row";
+          loadingMessage.textContent = "화면을 불러오지 못했어요. ";
+          const retry = document.createElement("button");
+          retry.type = "button";
+          retry.textContent = "다시 불러오기";
+          retry.addEventListener("click",()=>window.location.reload());
+          loadingMessage.appendChild(retry);
+          listEl.appendChild(loadingMessage);
+          showToast("화면을 다시 불러와 주세요");
+        }
       }
       $("qnaManageBtn").hidden = false;
     }catch(error){
@@ -9661,7 +9677,8 @@ body.detail-open .qna-session-actions { display:none !important; }
       visibleListCount = Number.isFinite(savedView.count) ? Math.max(LIST_PAGE_SIZE, savedView.count) : LIST_PAGE_SIZE;
       searchInput.value = searchQuery;
       $("searchClear").style.display = searchQuery ? "flex" : "none";
-      updatePopularVisibility();
+      $("quickPopular")?.classList.toggle("hidden", Boolean(searchQuery));
+      $("dropdown")?.classList.remove("show");
     }
     viewRestored = true;
     entriesLoaded = true;
