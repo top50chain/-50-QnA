@@ -10925,13 +10925,13 @@ body.detail-open .qna-session-actions { display:none !important; }
       return;
     }
 
-    wrap.classList.remove("hidden");
+    wrap.classList.toggle("hidden", Boolean(searchQuery));
     quickPopularIndex = Math.max(0, Math.min(quickPopularIndex, top.length - 1));
 
-    const makeItem = (index, entering=false)=>{
+    const makeItem = (index)=>{
       const item = top[index];
       const node = document.createElement("div");
-      node.className = "qp-item" + (entering ? " qp-enter" : "");
+      node.className = "qp-item";
       node.innerHTML =
         `<span class="qp-rank">${index + 1}</span>` +
         `<span class="qp-text">${escapeHtml(item.question || "제목 없음")}</span>`;
@@ -10945,24 +10945,18 @@ body.detail-open .qna-session-actions { display:none !important; }
       quickPopularTimer = setInterval(()=>{
         if(generation !== quickPopularGeneration) return;
 
-        const current = viewport.querySelector(".qp-item");
-        const nextIndex = (quickPopularIndex + 1) % top.length;
-        const next = makeItem(nextIndex, true);
-        viewport.appendChild(next);
-
-        requestAnimationFrame(()=>{
-          requestAnimationFrame(()=>{
-            if(generation !== quickPopularGeneration) return;
-            current?.classList.add("qp-exit");
-            next.classList.remove("qp-enter");
-          });
-        });
-
-        setTimeout(()=>{
-          if(generation !== quickPopularGeneration) return;
-          current?.remove();
-          quickPopularIndex = nextIndex;
-        }, 430);
+        if(document.hidden || searchQuery) return;
+        quickPopularIndex = (quickPopularIndex + 1) % top.length;
+        const next = makeItem(quickPopularIndex);
+        // 이전 제목을 즉시 교체해 어떤 타이머 순서에서도 한 줄만 표시합니다.
+        viewport.replaceChildren(next);
+        if(typeof next.animate === "function" &&
+          !window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+          next.animate([
+            {transform:"translateY(100%)",opacity:0},
+            {transform:"translateY(0)",opacity:1}
+          ], {duration:320,easing:"ease-out"});
+        }
       }, 2800);
     }
   }
