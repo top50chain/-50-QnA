@@ -7732,6 +7732,7 @@ body.detail-open .qna-session-actions { display:none !important; }
 <style>
   body.auth-locked #app { display:none; }
   #authGate[hidden] { display:none; }
+  .detail-q a.qna-auto-link, .detail-a a.qna-auto-link { color:#d85c16; text-decoration:underline; text-underline-offset:3px; overflow-wrap:anywhere; }
   #authGate { position:fixed; inset:0; z-index:20000; display:grid; place-items:center; background:#faf8f4; padding:24px; font-family:inherit; }
   .auth-layout { width:min(100%,380px); display:flex; flex-direction:column; align-items:center; gap:12px; }
   .auth-card { box-sizing:border-box; width:100%; background:white; border:1px solid #ece8e1; border-radius:20px; padding:28px; box-shadow:0 16px 45px rgba(0,0,0,.08); }
@@ -7783,7 +7784,8 @@ body.detail-open .qna-session-actions { display:none !important; }
   .qna-password-edit[hidden] { display:none; }
   #qnaManageMessage { font-size:13px; min-height:20px; color:#a83b2f; }
 </style>
-<div id="authGate" role="main">
+<!-- 로그인 여부 확인이 끝난 뒤에만 로그인창을 표시합니다. -->
+<div id="authGate" role="main" hidden>
   <div class="auth-layout">
   <form class="auth-card" id="qnaLoginForm">
     <h1><span class="auth-brand">으뜸50안경</span><span class="auth-highlight">무</span>엇이든 <span class="auth-highlight">물</span>어<span class="auth-highlight">보</span>아요!</h1>
@@ -8500,6 +8502,53 @@ body.detail-open .qna-session-actions { display:none !important; }
   function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+
+  // 저장 원본과 편집기는 유지하고, 상세 화면의 텍스트 노드만 링크로 변환합니다.
+  function linkifyPostText(root){
+    if(!root) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node){
+        return node.parentElement?.closest("a,style,script,textarea,button,code,pre,.store-placeholder,.open-placeholder")
+          ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    while(walker.nextNode()) nodes.push(walker.currentNode);
+    const pattern = /(?:https?:\/\/|www\.)[^\s<>"'\u3000]+|(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,63}(?::\d{1,5})?(?:[/?#][^\s<>"'\u3000]*)?/gi;
+    nodes.forEach(node=>{
+      const text = node.nodeValue || "";
+      const fragment = document.createDocumentFragment();
+      let end = 0;
+      for(const match of text.matchAll(pattern)){
+        const start = match.index;
+        // 이메일 주소나 단어 중간을 웹 주소로 오인하지 않습니다.
+        if(start && /[\w@.\/-]/.test(text[start - 1])) continue;
+        let label = match[0].replace(/[.,!?;:\u3002\uFF0C\uFF01\uFF1F\u201D\u2019]+$/g, "");
+        for(const [open, close] of [["(",")"],["[","]"],["{","}"]]){
+          while(label.endsWith(close) && label.split(close).length > label.split(open).length){
+            label = label.slice(0, -1);
+          }
+        }
+        let url;
+        try{ url = new URL(/^https?:\/\//i.test(label) ? label : `https://${label}`); }
+        catch(_){ continue; }
+        if(!["http:","https:"].includes(url.protocol) || !url.hostname || url.username || url.password) continue;
+        fragment.appendChild(document.createTextNode(text.slice(end, start)));
+        const link = document.createElement("a");
+        link.className = "qna-auto-link";
+        link.href = url.href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = label;
+        fragment.appendChild(link);
+        end = start + label.length;
+      }
+      if(!end) return;
+      fragment.appendChild(document.createTextNode(text.slice(end)));
+      node.replaceWith(fragment);
+    });
   }
 
   function looksLikeHtml(value){
@@ -10197,6 +10246,7 @@ body.detail-open .qna-session-actions { display:none !important; }
       ${images.length? `<div class="sec-label">이미지</div><div class="img-grid">${images.map(f=>`<img src="${f.dataUrl}" data-src="${f.dataUrl}">`).join("")}</div>` : ""}
       ${otherFiles.length? `<div class="sec-label">첨부파일</div><div class="file-list">${otherFiles.map(f=>`<div class="file-item"><span class="fic">📎</span><span>${escapeHtml(f.name)}</span><a href="${f.dataUrl}" download="${escapeHtml(f.name)}">다운로드</a></div>`).join("")}</div>` : ""}
     `;
+    $("detailScroll").querySelectorAll(".detail-q, .detail-a").forEach(linkifyPostText);
     // 사업자등록증 전용 파일은 사업자 번호 바로 아래에 다운로드 버튼으로 표시
     const licenseRow = $("detailScroll").querySelector(".business-license-file-row");
     if(licenseRow){
