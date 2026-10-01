@@ -8848,16 +8848,16 @@ body.detail-open .qna-session-actions { display:none !important; }
       table.parentNode.insertBefore(wrap, table);
       wrap.appendChild(table);
 
-      // 모바일에서도 표의 상단 제목/헤더 행을 숨기지 않고 별도 헤더로 복제합니다.
-      // PC의 셀 배경색, 글자색, 굵기, 정렬 등 inline style도 그대로 유지합니다.
+      // 모바일 카드에는 열 이름을 숨기고, 여러 열을 묶은 표 제목만 유지합니다.
+      let mobileHeader = null;
       const headerRows = [...table.querySelectorAll(":scope > thead > tr")];
       if(headerRows.length){
-        const mobileHeader = document.createElement("div");
+        mobileHeader = document.createElement("div");
         mobileHeader.className = "mobile-table-card-header";
 
         headerRows.forEach(headerRow=>{
           const headerCells = [...headerRow.querySelectorAll(":scope > th, :scope > td")];
-          if(!headerCells.length) return;
+          if(!headerCells.length || headerCells.length > 1) return;
 
           const mobileHeaderRow = document.createElement("div");
           mobileHeaderRow.className = "mobile-table-card-header-row";
@@ -8970,8 +8970,7 @@ body.detail-open .qna-session-actions { display:none !important; }
         }
         cards.appendChild(card);
       });
-      const mobileHeader = wrap.parentNode.querySelector(":scope > .mobile-table-card-header:last-of-type");
-      if(mobileHeader && mobileHeader.previousElementSibling === wrap){
+      if(mobileHeader?.parentNode && mobileHeader.previousElementSibling === wrap){
         mobileHeader.parentNode.insertBefore(cards, mobileHeader.nextSibling);
       }else{
         wrap.parentNode.insertBefore(cards, wrap.nextSibling);
@@ -9123,6 +9122,28 @@ body.detail-open .qna-session-actions { display:none !important; }
     $("authGate").hidden = false;
     $("authError").textContent = message;
   }
+  let lastAccessUser = "";
+  let lastAccessAttempt = 0;
+  async function recordQnaAccess(userId){
+    if(document.hidden) return;
+    const now = Date.now();
+    if(lastAccessUser === userId && now - lastAccessAttempt < 60000) return;
+    lastAccessUser = userId;
+    lastAccessAttempt = now;
+    try{
+      const {error} = await supabaseClient.rpc("qna_touch_access");
+      if(error) console.warn("최근 접속 기록 실패",error);
+    }catch(error){ console.warn("최근 접속 기록 실패",error); }
+  }
+  function formatQnaAccess(value){
+    if(!value) return "접속 기록 없음";
+    const date = new Date(value);
+    if(Number.isNaN(date.getTime())) return "접속 기록 없음";
+    return new Intl.DateTimeFormat("ko-KR",{
+      timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit",
+      hour:"2-digit",minute:"2-digit",hour12:false
+    }).format(date);
+  }
   async function checkQnaAccess(){
     if(authChecking) return;
     authChecking = true;
@@ -9145,6 +9166,7 @@ body.detail-open .qna-session-actions { display:none !important; }
         await supabaseClient.auth.signOut({scope:"local"});
         return;
       }
+      void recordQnaAccess(user.id);
       canManageAccounts = member.can_manage === true;
       $("qnaManageSessionBtn").hidden = !canManageAccounts;
       $("qnaManageDivider").hidden = !canManageAccounts;
@@ -9268,6 +9290,10 @@ body.detail-open .qna-session-actions { display:none !important; }
           }catch(error){checkbox.checked=!next;$("qnaManageMessage").textContent=error.message;}
           finally{checkbox.disabled=false;}
         });
+        const recent=document.createElement("div");
+        recent.style.cssText="margin-top:8px;font-size:12px;line-height:1.5;color:#777";
+        recent.textContent=`최근 접속 · ${formatQnaAccess(member.last_access_at)}`;
+        item.appendChild(recent);
         list.appendChild(item);
       }
     }catch(error){
