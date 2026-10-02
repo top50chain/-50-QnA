@@ -6931,6 +6931,17 @@
     }
   }
 
+
+  .link-popover{width:280px;max-width:calc(100vw - 32px);box-sizing:border-box;}
+  .link-popover label{display:block;margin:8px 0 4px;font-size:12px;font-weight:600;}
+  .link-popover input{box-sizing:border-box;width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;}
+  .link-popover input:focus{outline:2px solid var(--orange);outline-offset:1px;}
+  .link-actions{display:flex;gap:8px;margin-top:12px;}
+  .link-actions button{flex:1;padding:8px;border:1px solid var(--border);border-radius:7px;cursor:pointer;background:white;}
+  #applyTextLinkBtn{background:var(--orange);color:white;border-color:var(--orange);}
+  .link-error{font-size:12px;color:#b83224;margin-top:8px;}
+  .rich-editor a[href], .detail-a a[href]{color:#d85c16;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere;}
+
 </style>
 
 <style>
@@ -8159,6 +8170,20 @@ body.detail-open .qna-session-actions { display:none !important; }
               </div>
             </div>
           </div>
+          <div class="rich-tool-menu-wrap">
+            <button type="button" class="rich-tool-btn" id="textLinkMenuBtn" title="링크 설정" aria-label="링크 설정" aria-expanded="false" aria-controls="textLinkPopover">
+              <svg class="toolbar-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2M8 16l8-8"></path></svg>
+            </button>
+            <div class="rich-popover link-popover" id="textLinkPopover" role="group" aria-label="글자에 링크 연결">
+              <div class="rich-popover-title">링크 설정</div>
+              <label for="textLinkLabel">표시할 글자</label>
+              <input type="text" id="textLinkLabel" placeholder="예) 캐릭터 정보">
+              <label for="textLinkUrl">연결할 주소</label>
+              <input type="text" inputmode="url" id="textLinkUrl" placeholder="https://…">
+              <div class="link-error" id="textLinkError" role="alert" hidden></div>
+              <div class="link-actions"><button type="button" id="removeTextLinkBtn">링크 해제</button><button type="button" id="applyTextLinkBtn">적용</button></div>
+            </div>
+          </div>
         </div>
         <div id="aInput"
              class="rich-editor"
@@ -8727,6 +8752,11 @@ body.detail-open .qna-session-actions { display:none !important; }
             child.setAttribute(name, attr.value);
           }else if(child.tagName === "BUTTON" && ["type","aria-label","title"].includes(name)){
             child.setAttribute(name, attr.value);
+          }else if(child.tagName === "A" && name === "target"){
+            if(attr.value === "_blank") child.setAttribute("target", "_blank");
+            else child.removeAttribute(attr.name);
+          }else if(child.tagName === "A" && name === "rel"){
+            child.setAttribute("rel", "noopener noreferrer");
           }else if(child.tagName === "A" && ["href","download","title","aria-label"].includes(name)){
             if(name === "href" && !/^(?:data:|blob:|https?:)/i.test(attr.value)){
               child.removeAttribute(attr.name);
@@ -13262,7 +13292,7 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
     const isMobile = window.matchMedia("(max-width:679px)").matches;
     const isTable = popover.classList.contains("table-popover");
     const isColor = popover.classList.contains("color-popover");
-    const isWideMobilePopover = isMobile && (isTable || isColor);
+    const isWideMobilePopover = isMobile && (isTable || isColor || popover.classList.contains("link-popover"));
     const pad = isMobile ? 8 : 10;
     const gap = 8;
 
@@ -13326,12 +13356,112 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
   }
 
   function closeRichPopovers(){
+    $("textLinkPopover")?.classList.remove("show");
+    $("textLinkMenuBtn")?.setAttribute("aria-expanded", "false");
     $("textColorPopover")?.classList.remove("show");
     $("alignPopover")?.classList.remove("show");
     $("tablePopover")?.classList.remove("show");
     $("tableGridPanel")?.classList.remove("show");
     $("cellColorPanel")?.classList.remove("show");
   }
+
+  let textLinkRange = null;
+  let textLinkAnchor = null;
+  function currentTextLink(range){
+    const element = node=>node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+    const start = element(range?.startContainer)?.closest("a");
+    const end = element(range?.endContainer)?.closest("a");
+    return start && start === end && answerEditor.contains(start) ? start : null;
+  }
+  $("textLinkMenuBtn").addEventListener("click", event=>{
+    event.stopPropagation();
+    const opening = !$("textLinkPopover").classList.contains("show");
+    const range = getUsableEditorRange();
+    closeRichPopovers();
+    if(!opening) return;
+    textLinkRange = range;
+    textLinkAnchor = currentTextLink(range);
+    if(textLinkAnchor){
+      textLinkRange = document.createRange();
+      textLinkRange.selectNodeContents(textLinkAnchor);
+    }
+    $("textLinkLabel").value = textLinkAnchor?.textContent || range?.toString() || "";
+    $("textLinkUrl").value = textLinkAnchor?.getAttribute("href") || "";
+    $("removeTextLinkBtn").disabled = !textLinkAnchor;
+    $("textLinkError").hidden = true;
+    $("textLinkPopover").classList.add("show");
+    $("textLinkMenuBtn").setAttribute("aria-expanded", "true");
+    requestAnimationFrame(()=>{
+      positionRichPopover($("textLinkPopover"), $("textLinkMenuBtn"));
+      ($("textLinkLabel").value ? $("textLinkUrl") : $("textLinkLabel")).focus();
+    });
+  });
+  function finishTextLinkChange(range){
+    answerEditor.focus();
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    savedEditorRange = range.cloneRange();
+    answerEditor.dispatchEvent(new Event("input", {bubbles:true}));
+    snapshotEditorForUndo();
+    closeRichPopovers();
+  }
+  $("applyTextLinkBtn").addEventListener("click", ()=>{
+    const label = $("textLinkLabel").value.trim();
+    let address = $("textLinkUrl").value.trim();
+    let url;
+    if(address && !/^[a-z][a-z0-9+.-]*:/i.test(address) && !address.startsWith("/")) address = "https://" + address;
+    try{url = new URL(address);}catch(_){}
+    if(!label || !url || !["http:","https:"].includes(url.protocol)){
+      $("textLinkError").textContent = !label ? "표시할 글자를 입력해주세요." : "http 또는 https 웹 주소를 입력해주세요.";
+      $("textLinkError").hidden = false;
+      return;
+    }
+    snapshotEditorForUndo();
+    let range = textLinkRange?.cloneRange();
+    if(!range || !answerEditor.contains(range.commonAncestorContainer)){
+      range = document.createRange();range.selectNodeContents(answerEditor);range.collapse(false);
+    }
+    if(textLinkAnchor && answerEditor.contains(textLinkAnchor)){
+      textLinkAnchor.href = url.href;
+      textLinkAnchor.textContent = label;
+      textLinkAnchor.target = "_blank";
+      textLinkAnchor.rel = "noopener noreferrer";
+      range.selectNode(textLinkAnchor);
+    }else{
+      const anchor = document.createElement("a");
+      anchor.href = url.href;anchor.target = "_blank";anchor.rel = "noopener noreferrer";
+      if(!range.collapsed && label === range.toString()){
+        const contents = range.extractContents();
+        contents.querySelectorAll("a").forEach(a=>a.replaceWith(...a.childNodes));
+        anchor.append(contents);
+      }else{range.deleteContents();anchor.textContent = label;}
+      range.insertNode(anchor);range.selectNode(anchor);
+    }
+    range.collapse(false);
+    finishTextLinkChange(range);
+    showToast("글자에 링크를 연결했어요");
+  });
+  $("removeTextLinkBtn").addEventListener("click", ()=>{
+    if(!textLinkAnchor || !answerEditor.contains(textLinkAnchor)) return;
+    snapshotEditorForUndo();
+    const range = document.createRange();range.selectNodeContents(textLinkAnchor);
+    const contents = range.extractContents();
+    const last = contents.lastChild;
+    textLinkAnchor.replaceWith(contents);
+    if(last) range.setStartAfter(last);
+    range.collapse(true);
+    finishTextLinkChange(range);
+    showToast("링크를 해제했어요");
+  });
+  $("textLinkPopover").addEventListener("keydown", event=>{
+    if(event.key === "Enter" && event.target.matches("input")){
+      event.preventDefault();$("applyTextLinkBtn").click();
+    }
+    if(event.key === "Escape"){
+      event.preventDefault();closeRichPopovers();$("textLinkMenuBtn").focus();
+    }
+  });
 
   function buildColorPalette(containerId, onPick){
     const wrap = $(containerId);
@@ -14134,6 +14264,8 @@ $("updateCancelBtn")?.addEventListener("click", ()=>{
 
 
   function repositionOpenRichPopover(){
+    const linkPop = $("textLinkPopover");
+    if(linkPop?.classList.contains("show")) positionRichPopover(linkPop, $("textLinkMenuBtn"));
     const colorPop = $("textColorPopover");
     const tablePop = $("tablePopover");
     if(colorPop?.classList.contains("show")){
