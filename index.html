@@ -9243,8 +9243,25 @@ body.detail-open .qna-session-actions { display:none !important; }
       hour:"2-digit",minute:"2-digit",hour12:false
     }).format(date);
   }
-  async function checkQnaAccess(){
-    if(authChecking) return;
+  // Only retry read operations rejected because the JWT was issued in the future.
+  // Keep the same session; minting another token can repeat the time mismatch.
+  const QNA_CLOCK_MESSAGE = "인증 서버의 시간 확인 오류가 발생했어요(PGRST303). 잠시 후 다시 시도해 주세요. 계속되면 Supabase 서버 점검이 필요합니다.";
+  let authRetryAfter = 0;
+  let lastAuthClockFailure = false;
+  function isQnaClockError(error){
+    return error?.code === "PGRST303" && /JWT issued at future/i.test(error.message || "");
+  }
+  async function retryQnaClockRead(operation, onRetry){
+    const delays = [2000,4000,8000];
+    for(let attempt=0; ; attempt++){
+      const result = await operation();
+      if(!isQnaClockError(result.error) || attempt >= delays.length) return result;
+      if(onRetry) onRetry(attempt + 1);
+      await new Promise(resolve=>setTimeout(resolve,delays[attempt]));
+    }
+  }
+  async function checkQnaAccess(force=false){
+    if(authChecking || (!force && performance.now() < authRetryAfter)) return;
     authChecking = true;
     try{
       const {data:{user},error:userError} = await supabaseClient.auth.getUser();
@@ -9255,14 +9272,20 @@ body.detail-open .qna-session-actions { display:none !important; }
         }
         return;
       }
-      const [memberResult, sessionResult] = await Promise.all([
-        supabaseClient.from("qna_members").select("active,can_manage").eq("user_id",user.id).maybeSingle(),
-        supabaseClient.rpc("is_qna_member")
-      ]);
-      const {data:member,error:memberError} = memberResult;
-      const {data:sessionAllowed,error:sessionError} = sessionResult;
-      if(memberError) throw memberError;
-      if(sessionError) throw sessionError;
+      const accessResult = await retryQnaClockRead(async()=>{
+        const [memberResult,sessionResult] = await Promise.all([
+          supabaseClient.from("qna_members").select("active,can_manage").eq("user_id",user.id).maybeSingle(),
+          supabaseClient.rpc("is_qna_member")
+        ]);
+        return {data:{member:memberResult.data,sessionAllowed:sessionResult.data},
+          error:memberResult.error || sessionResult.error};
+      }, attempt=>{
+        if(!$("authGate").hidden) $("authError").textContent=`인증 서버 응답을 기다리는 중이에요… (${attempt}/3)`;
+      });
+      if(accessResult.error) throw accessResult.error;
+      const {member,sessionAllowed} = accessResult.data;
+      authRetryAfter = 0;
+      lastAuthClockFailure = false;
       if(!member?.active || !sessionAllowed){
         lockQna("사용할 수 없는 계정입니다.");
         await supabaseClient.auth.signOut({scope:"local"});
@@ -9300,7 +9323,10 @@ body.detail-open .qna-session-actions { display:none !important; }
       $("qnaManageBtn").hidden = false;
     }catch(error){
       console.error("Q&A 계정 확인 실패",error);
-      lockQna("연결을 확인한 뒤 다시 로그인해 주세요.");
+      // Slow background checks after a failure instead of repeating every ten seconds.
+      lastAuthClockFailure = isQnaClockError(error);
+      authRetryAfter = performance.now() + 60000;
+      lockQna(isQnaClockError(error) ? QNA_CLOCK_MESSAGE : "연결을 확인한 뒤 다시 로그인해 주세요.");
     }finally{ authChecking = false; }
   }
   $("qnaLoginForm").addEventListener("submit",async event=>{
@@ -9312,15 +9338,18 @@ body.detail-open .qna-session-actions { display:none !important; }
     if(!username){ $("authError").textContent = "아이디를 입력해 주세요."; return; }
     btn.disabled = true;
     try{
-      const {data:email,error:lookupError} = await supabaseClient.rpc("qna_login_email",{p_username:username});
+      const {data:email,error:lookupError} = await retryQnaClockRead(
+        ()=>supabaseClient.rpc("qna_login_email",{p_username:username}),
+        attempt=>{ $("authError").textContent=`인증 서버 응답을 기다리는 중이에요… (${attempt}/3)`; }
+      );
       if(lookupError || !email) throw lookupError || new Error("계정 없음");
       const {error} = await supabaseClient.auth.signInWithPassword({email,password});
       $("qnaPassword").value = "";
       if(error) throw error;
-      await checkQnaAccess();
+      await checkQnaAccess(true);
     }catch(error){
       console.error("Q&A 로그인 실패",error);
-      $("authError").textContent = "아이디 또는 비밀번호를 확인해 주세요.";
+      $("authError").textContent = isQnaClockError(error) ? QNA_CLOCK_MESSAGE : "아이디 또는 비밀번호를 확인해 주세요.";
     }finally{ btn.disabled = false; }
   });
   $("qnaLogoutBtn").addEventListener("click",async()=>{
@@ -9336,6 +9365,9 @@ body.detail-open .qna-session-actions { display:none !important; }
       let message = "서버에 연결하지 못했어요. Edge Function 배포와 연결을 확인해 주세요.";
       if(error.context && typeof error.context.json === "function"){
         try { const detail=await error.context.json(); if(detail.error) message=detail.error; } catch {}
+      }
+      if(action === "list" && lastAuthClockFailure){
+        message = "서버의 인증 시간 오류로 계정관리 권한을 확인할 수 없어요. 로그인 연결이 정상화된 뒤 다시 시도해 주세요.";
       }
       throw new Error(message);
     }
